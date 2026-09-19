@@ -347,7 +347,7 @@ Ce dépôt affiche des circuits sous forme de `visualization_msgs/Marker` de typ
 <arg name="mesh" value="'{header: {frame_id: map}, ns: scan, id: 1, type: 10, action: 0,
   pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}},
   scale: {x: 1.0, y: 1.0, z: 1.0}, color: {a: 1.0, r: 1.0, g: 1.0, b: 1.0},
-  mesh_resource: \"package://virtual_racetracks_collection/meshes/piste.dae\",
+  mesh_resource: 'package://virtual_racetracks_collection/meshes/piste.dae',
   mesh_use_embedded_materials: true}'" />
 <node name="pub_mesh" pkg="rostopic" type="rostopic" args="pub /shape visualization_msgs/Marker $(arg mesh)"/>
 ```
