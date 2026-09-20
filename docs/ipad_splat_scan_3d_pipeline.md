@@ -1,439 +1,726 @@
 # Splat et scan 3D d'un environnement avec un iPad — guide et pipeline recommandé
 
-> Étude réalisée le **19 septembre 2026**. Prix, versions et fonctionnalités ont été vérifiés à cette date sur les pages officielles (App Store, sites éditeurs, GitHub, documentation). Ce marché bouge très vite : revérifiez les tarifs avant d'acheter quoi que ce soit.
->
-> Méthode : un workflow multi-agents a balayé le web sur 11 angles (apps iPad, capture avec poses ARKit, cloud gratuit, traitement local, viewers, plateforme Apple, bonnes pratiques, tarifs, retours d'utilisateurs, réutilisation ROS), a identifié 110 solutions, puis un « vérificateur sceptique » par solution a tenté de réfuter chaque affirmation sur les sources officielles (34 fiches vérifiées, ~1 260 pages ouvertes). Les points restés incertains sont signalés **« à vérifier »**. Voir l'annexe pour les limites de l'étude.
+> **Rapport établi le 2026-09-20.** Tous les prix, formats et compatibilités ont été vérifiés les 19 et 20 septembre 2026 sur les pages officielles citées en section 11. **Ce marché bouge très vite** : Scaniverse est passé au freemium en 2026, Polycam a déplacé des fonctions vers des paliers supérieurs, Postshot a supprimé l'export de son plan gratuit. Revérifiez tout prix avant de payer quoi que ce soit.
 
 ---
 
-## 1. Réponse courte
+## 1. Réponse courte (la recommandation en 10 lignes)
 
-**Pipeline 100 % gratuit, tout sur l'iPad (recommandé pour démarrer) :**
+> ### Avant tout : identifiez votre iPad (30 secondes)
+> **Réglages → Général → Informations → ligne « Nom du modèle ».**
+> **Seuls les modèles nommés « iPad Pro » de 2020 et postérieurs ont un LiDAR.** Aucun iPad Air, mini ou standard n'en a, y compris l'**iPad Air M4 de 2026**.
+> **Repère visuel** : sur un iPad Pro à LiDAR, un petit capteur noir supplémentaire est visible à côté de l'objectif arrière.
+> Toute la suite du rapport se lit différemment selon cette réponse : le §2 a deux colonnes, le §4 a deux variantes.
 
-1. **Scaniverse** (Niantic Spatial, gratuit, iPadOS 16.6+, LiDAR facultatif) en mode « Classic » : le splat est calculé **sur l'iPad** en 1 à 2 minutes, sans compte ni abonnement, exportable en **PLY / SPZ**. La même app produit un **maillage texturé** (mode LiDAR sur iPad Pro, mode photogrammétrie sur les autres iPad), exportable en **OBJ / FBX / USDZ / LAS** (GLB cité par l'App Store).
-2. Scannez **pièce par pièce ou zone par zone**, 1 à 3 minutes par scan (l'app avertit au-delà de 180 s ; les très gros scans échouent).
-3. Nettoyez, compressez et publiez le splat gratuitement dans **SuperSplat** (éditeur web MIT, hébergement gratuit sur superspl.at).
-4. Avec un iPad Pro (LiDAR), ajoutez **KIRI Engine Basic** (gratuit) pour le mode « Scene Scan » LiDAR local (mesh OBJ/USDZ) et **Modelar** (gratuit) si vous voulez un nuage de points E57/LAS.
+1. **Oui, c'est gratuit pour une pièce**, et une seule application suffit : **Scaniverse** (Niantic Spatial), en mode « Classic », calcule le splat **sur l'iPad** en 1–2 min, hors ligne, sans quota.
+2. **Vos deux besoins sont servis par une seule capture.** C'est le cœur de toute la méthode : un scan Scaniverse correctement réglé (données brutes activées) se retraite en **splat** *et* en **maillage** sans refilmer. Ne menez pas deux campagnes de capture en parallèle — menez-en une, et retraitez-la deux fois (§4, étape 5).
+3. **Le LiDAR n'est pas nécessaire** pour le splat. Il n'existe de toute façon que sur les **iPad Pro** (2020 et suivants) — voir l'encadré d'identification ci-dessus.
+4. **L'astuce centrale** : activez la sauvegarde des **données brutes** *avant* le premier scan, faites **un seul scan de 90–120 s**, puis « **Reprocess Scan** ». Le support officiel est explicite : « *open your scan, then press the … icon in the upper-right corner. Select Reprocess Scan* », et cela n'est possible que « *provided you have the raw data saved* ».
+5. **Étape zéro obligatoire** : le support Niantic ne garantit les splats que pour les « iPhones 12 or newer » et **ne dit rien des iPad**. Testez 60 s avant d'investir une demi-journée — et si le mode Splat n'apparaît pas, le plan B est décrit à l'étape 0.
+6. **Posez un mètre pliant ouvert à 1,00 m dans la scène, dans TOUS les cas, y compris sur iPad Pro.** Le mesh LiDAR est à l'échelle réelle et mesurable dans l'app ; **l'échelle du splat, elle, n'est documentée officiellement nulle part**. Recalibrez ensuite dans SuperSplat.
+7. Nettoyage, mise à l'échelle et partage web : **SuperSplat** (navigateur, gratuit, MIT) puis **superspl.at**.
+8. **Non, un circuit complet n'est pas faisable** ainsi : la capture depuis un véhicule est explicitement non supportée par Niantic. Visez des tronçons et des points d'intérêt.
+9. **Dépense la plus défendable si vous avez un Mac : aucune.** **3D Splat App** (Laan Labs) est gratuite, native Mac App Store, entraîne en local en Metal et exporte PLY/SPZ/SOG — c'est l'équivalent 0 € de RadianceKit (7,99 $). **3D Splat App et Brush ont tous deux une interface graphique** : 3D Splat App s'installe en un clic depuis le Mac App Store et propose des presets (Fast / Medium / HD) ; Brush se télécharge en binaire (Apple Silicon, Windows x64, Linux x64) ou se compile, s'utilise en ligne de commande avec `--with-viewer` pour ouvrir l'interface, et **tourne aussi sur PC AMD/Intel** — ce que 3D Splat App ne fait pas (Mac uniquement).
+10. **Ne payez pas** : Postshot Indie 204 €/an, Polycam Basic 150 $/an (sans PLY du splat), Scaniverse Plus tant que vous n'avez pas épuisé le quota Free.
+11. **Budget conseillé** : 0 € pour démarrer, 0 € ensuite dans la grande majorité des cas.
 
-**Pour monter en qualité sans payer, il faut un ordinateur :**
+**Aiguillage selon votre matériel :**
 
-- **Mac Apple Silicon** : filmez en 4K avec l'iPad (exposition verrouillée), puis entraînez le splat dans **3D Splat App** (gratuit, Mac App Store, Metal) ou **COLMAP + Brush** (gratuits, open source).
-- **PC Windows avec GPU NVIDIA (ou AMD récent)** : **RealityScan 2.2** (gratuit sous 1 M$ de revenus) donne un maillage de n'importe quelle taille et exporte les caméras au format COLMAP, que **Brush**, **OpenSplat** ou **LichtFeld Studio** transforment en splat.
-- **Sans ordinateur puissant** : **Splatware Free** (cloud, modèle « Lite » illimité, 3 exports/jour) ou un notebook **Kaggle / Google Colab** gratuit avec COLMAP + OpenSplat/gsplat.
+| Votre situation | Chemin |
+|---|---|
+| iPad Pro (LiDAR), pas d'ordinateur | §4, variante LiDAR — splat + mesh mesuré (Scaniverse, ou Modelar pour le nuage E57/LAS) |
+| iPad Air / mini / standard, pas d'ordinateur | §4, variante sans LiDAR — splat + mesh Polycam Space (replis : KIRI Photo Scan, RealityScan Mobile) |
+| iPad + Mac Apple Silicon | §4 puis §6 : **3D Splat App (0 €)**, ou RadianceKit 7,99 $, ou Brush. **Mesh sans ligne de commande : Reality Composer Pro ou PhotoCatch** (§5.5) |
+| iPad + PC NVIDIA, ou qualité maximale | §4 puis §5 : COLMAP + gsplat / LichtFeld |
+| **PC Windows/Linux avec GPU AMD ou Intel** | **Brush en local** (binaires Windows x64 et Linux x64), ou **OpenSplat** (AGPLv3, ROCm/HIP) — pas besoin de cloud |
+| **Aucun GPU du tout** | GPU cloud gratuit en §5.4 (Kaggle — vérification SMS obligatoire ; Lightning AI en alternative) |
 
-**Ce qu'il ne faut PAS croire en 2026 :** Polycam gratuit **ne crée plus de splats** (export GLTF uniquement) ; KIRI Engine réserve **tout** le 3DGS au plan Pro ; Luma AI a abandonné la capture 3D (app iPhone uniquement, Genie fermé le 1er janvier 2026) ; 3D Scanner App est passée sous abonnement ; Postshot est Windows/NVIDIA uniquement et son plan gratuit n'exporte pas le splat.
-
-**Le seul achat qui change vraiment la donne si vous ne voulez pas d'ordinateur :** KIRI Engine Pro (49,99 $/an via l'App Store, 79,99 $/an sur le site) pour obtenir **splat + maillage issu du splat** d'une même vidéo, sans LiDAR.
+> **Qui exige réellement NVIDIA ?** Seulement **Postshot**, **LichtFeld Studio** et **gsplat/nerfstudio**. Brush tourne « *on macOS/windows/linux, AMD/Nvidia/Intel cards, Android, and in a browser* » ; OpenSplat tourne sur « *NVIDIA, AMD and Apple (Metal) GPUs, but can also run entirely on the CPU (~100x slower)* ».
 
 ---
 
-## 2. Comprendre en 2 minutes
+## 2. Comprendre en 2 minutes : splat (3DGS) vs scan 3D (mesh)
 
-### Splat (3DGS) ou scan 3D (mesh) ?
+Un **Gaussian splat (3DGS)** est un nuage de millions de petites ellipses colorées. C'est une **représentation d'apparence** : photoréaliste, avec reflets, verre, feuillage. Mais ce n'est **pas de la géométrie** : on ne peut ni mesurer, ni faire une collision, ni l'ouvrir dans un logiciel de CAO sans conversion.
 
-| | Gaussian splat (3DGS) | Scan 3D classique (maillage / nuage de points) |
+Un **scan 3D classique** produit un **maillage texturé** (mesh) et/ou un **nuage de points**. Moins joli, mais mesurable, exportable en OBJ/FBX/USDZ, utilisable pour de la collision, de la simulation ou de la modélisation.
+
+**Les deux se complètent — et Scaniverse permet de tirer les deux d'une seule capture.** C'est la raison pour laquelle tout le §4 est construit autour d'**une seule prise de vue**.
+
+**Ce que l'iPad sait faire :**
+
+| | iPad Pro (LiDAR, 2020+) | iPad Air / mini / standard |
 |---|---|---|
-| Ce que c'est | Des millions de « gaussiennes » colorées qui reproduisent l'apparence photoréaliste d'une scène, y compris reflets et végétation | Une surface triangulée texturée (OBJ, GLB, USDZ…) ou un nuage de points (PLY, LAS, E57) avec une géométrie mesurable |
-| Points forts | Rendu très réaliste, tolère les matériaux difficiles, léger en SPZ/SOG | Géométrie exploitable : mesures, collisions, impression 3D, simulateurs (Gazebo), CAO |
-| Points faibles | Pas de vraie surface : mesure et collision difficiles, conversion en mesh imparfaite | Échoue sur vitres, miroirs, murs unis ; textures moins réalistes |
-| Formats | PLY (lourd), SPZ (≈10× plus petit), SOG (15-20× plus petit), SPLAT, KSPLAT | OBJ, FBX, GLB/GLTF, USDZ, STL, DAE ; nuages PLY, LAS, E57, PCD |
+| Splat 3DGS | Oui, sur l'appareil, gratuit | Oui, sur l'appareil, gratuit |
+| Mesh mesuré | Oui (LiDAR, portée ≈ 5 m), mesures dans l'app | Non — photogrammétrie seulement |
+| Nuage de points LAS / E57 | Oui (Scaniverse LAS ; Modelar E57/LAS/PLY/CSV) | **Pas de LAS ni d'E57 ; nuage de points PLY/XYZ possible gratuitement via KIRI Photo Scan** (photogrammétrie cloud, échelle non garantie, rétention serveur courte) |
+| Échelle du splat | **Non documenté** — posez un étalon | **Non documenté** — posez un étalon |
 
-Les deux sont complémentaires : capturez **les deux** lors de la même visite (LiDAR ou photogrammétrie pour la géométrie et l'échelle, vidéo/photos pour le splat).
+Le LiDAR d'Apple porte à **environ 5 mètres**. Au-delà, la géométrie est interpolée et non mesurée. Sa précision réelle est **centimétrique au mieux**, avec une dérive qui s'accumule : une pièce de 9 m peut mesurer +10 cm d'un côté et −8 cm de l'autre (mesures rapportées par ScanManifold, article de 2022 — **source ancienne**, mais le capteur n'a pas changé).
 
-### Ce que votre iPad sait faire
+> **Point d'honnêteté sur l'échelle.** Aucune documentation éditeur ne garantit que le splat Scaniverse sort à l'échelle métrique. Ce qui est documenté, c'est que le **mesh LiDAR** permet de « *prendre des mesures précises* ». Pour le splat, traitez l'échelle comme inconnue jusqu'à recalibration manuelle dans SuperSplat (§4, étape 7) — sur iPad Pro comme sur iPad Air.
 
-| Modèle d'iPad | LiDAR | Conséquence |
-|---|---|---|
-| **iPad Pro** 11" 2e gén. / 12,9" 4e gén. (2020, A12Z), M1 (2021), M2 (2022), M4 (2024), M5 (2025) | **Oui** (portée ≈ 5 m) | Mesh LiDAR sur l'appareil, plans RoomPlan, échelle réelle, poses ARKit exportables (Polycam raw, SplatKing, Record3D). Object Capture guidé d'Apple exige en plus une puce A14+, donc iPad Pro 2021 ou plus récent |
-| iPad Air (toutes gén., y compris M4 2026), iPad mini (A17 Pro), iPad (A16) | **Non** | Splat et photogrammétrie par photos/vidéo uniquement (Scaniverse « Ignore LiDAR », RealityScan Mobile, KIRI Photo Scan, Polycam Space Mode sans LiDAR) ; pas d'échelle réelle automatique |
-
-Autres faits utiles :
-
-- L'iPad Pro M4/M5 n'a qu'une **seule caméra arrière 12 MP grand-angle** (pas d'ultra grand-angle) : il faut plus de passes qu'avec un iPhone Pro. La vidéo 4K 30 fps est parfaitement adaptée.
-- Pas de ProRAW sur iPad ; des JPEG/HEIC bien exposés ou une vidéo 4K suffisent largement.
-- **iPadOS 27** (sorti le 14 septembre 2026) et **RealityKit 27** ajoutent le **rendu natif des Gaussian splats** (API `GaussianSplatComponent`, déjà active sur visionOS 27, annoncée « dans une prochaine version » pour iOS/iPadOS/macOS 27 dans les notes de version). Apple ne fournit **aucun outil de capture** de splats : la création reste du ressort d'apps tierces. OpenUSD 26.03 (mars 2026) a standardisé un schéma USD pour les splats.
-- Prix Apple France au 19/09/2026 (hausse de juin 2026) : iPad Pro M5 11" **à partir de 1 319 €** (13" : 1 669 €), reconditionné Apple iPad Pro 11" M4 256 Go **1 019 €** ; iPad Air M4 819 € (sans LiDAR) ; iPad A16 509 € ; iPad mini A17 Pro 689 €. Un iPad Pro d'occasion 2020-2022 est la voie LiDAR la moins chère.
+> **Second point d'honnêteté** : le mode Splat de Scaniverse n'est documenté officiellement que pour les iPhone 12+. Sur iPad Air 4+/iPad 10+/mini 6+/iPad Pro M-series c'est très probable ; sur iPad 8, mini 5 ou Air 3 (puces A12/A13), **à vérifier avant de s'engager** (voir §4, étape 0, et son plan B).
 
 ---
 
 ## 3. Panorama des solutions vérifiées
 
-Légende : « sur appareil » = calcul sur l'iPad ; « cloud » = envoi obligatoire sur les serveurs de l'éditeur ; « ordinateur » = Mac/PC nécessaire.
-
-### 3.1 Apps iPad
-
-| Solution | Splat | Mesh / scan | Traitement | iPad / LiDAR | Gratuit ? Prix 2026 | Exports | Verdict environnement |
-|---|---|---|---|---|---|---|---|
-| **Scaniverse** (Niantic Spatial) v5.2.8 | Oui, sur l'appareil, illimité (« Classic ») ; cloud « New Scaniverse » à crédits | Oui : mesh LiDAR (iPad Pro) ou photogrammétrie (sans LiDAR), nuage LAS | Sur appareil (Classic) ou cloud | iPadOS 16.6+, puce A12+ ; LiDAR facultatif. Splat garanti sur iPhone 12+ ; sur iPad A12/A13 (iPad 8, mini 5, Air 3) **à tester** | **Gratuit** et illimité sur l'appareil. Cloud : Free 20 000 crédits/mois (≈ 11 min de capture), Plus 20 $/mois (200 $/an), Pro 50 $/mois (500 $/an, droits commerciaux) | Splat PLY, SPZ ; mesh OBJ, FBX, USDZ, LAS (+ GLB) ; cloud : + USDZ splat+mesh (payant). Pas d'export des images/poses | **Le meilleur point d'entrée gratuit.** Scans de 1-3 min (max 5 min / 500 m²) : découper une maison ou un circuit en zones ; fusion multi-scans uniquement en cloud payant |
-| **Polycam** v7.0.2 | Oui mais **cloud et payant** (Basic et plus) ; Free : non | Oui : Space Mode LiDAR (mesh + plans), Space Mode sans LiDAR (mesh), photogrammétrie cloud | Sur appareil (mesh LiDAR/Space) ou cloud | iPadOS 18+ ; LiDAR : iPad Pro 2020+ ; Space sans LiDAR : iPad mini 6, iPad 10, Air 5+ | Free 0 $ (150 images, **export GLTF seul**, pas de splat) ; Basic 150 $/an (12,50 $/mois) ou 30 $/mois ; Business 400 $/an ; plan « Pro » supprimé | Free : GLTF ; Basic : OBJ, FBX, DAE, STL, USDZ ; Business : + PLY, LAS, XYZ, DXF, **Splat PLY** (à confirmer dans l'app) ; raw data (images + poses + profondeur) en Developer Mode sur LiDAR, tous plans | Excellent produit mais sa version gratuite est une démo. Utile gratuitement pour l'export « raw data » (poses ARKit) vers un pipeline PC |
-| **KIRI Engine** v4.2.7 | Oui, cloud, **Pro uniquement** (vidéo ≤ 1080p / 3 min ou 20-300 photos) | Oui : Photo Scan gratuit (150 photos), LiDAR Scan gratuit et local (Room / Scene / Object), 3DGS→Mesh 3.0 (Pro) | Cloud (photo, 3DGS) ; sur appareil (LiDAR) | iPadOS 15+ ; LiDAR requis seulement pour les modes LiDAR (iPad Pro 2020+) | Basic gratuit, exports illimités sans filigrane ; Pro 17,99 $/mois ou 79,99 $/an (site), **49,99 $/an via l'App Store** | Mesh OBJ, FBX, STL, GLB, GLTF, USDZ, PLY, XYZ ; splat PLY ; raw dataset Nerfstudio (LiDAR + Pro) | Très bon pour le mesh gratuit (Scene Scan LiDAR sans limite documentée). Le splat est payant mais c'est l'option « splat + mesh sans ordinateur » la moins chère |
-| **RealityScan Mobile** (Epic) v1.9 | Non | Oui : photogrammétrie cloud, 20-300 photos, orienté objets | Cloud | iPadOS 16+, tout iPad, sans LiDAR | **Gratuit**, tout export gratuit, usage commercial autorisé | OBJ + USDZ direct ; GLB/glTF via Sketchfab | Objets et gros objets ; une pièce ou un circuit dépasse les 300 photos : scanner par zones |
-| **Teleport by Varjo** v2.11.1 | Oui, cloud, conçu pour les lieux (pièces → quartiers, jusqu'à 100 M de splats) | Non | Cloud | iPadOS 17+, sans LiDAR | 5 captures d'essai (sans export) ; puis « pay per capture » à partir de 30 $ ; export PLY réservé aux payants | PLY (payant), vidéo fly-through | La meilleure solution cloud pour un **grand extérieur** (drone accepté), mais payante |
-| **Gaussian SplatKing** v1.4.1 | Ne calcule pas le splat : app de **capture** (photo, vidéo 4K, mode LiDAR) | Non (nuage de points LiDAR seulement) | Sur appareil (données), entraînement sur ordinateur | iPadOS 18+ ; mode LiDAR = iPad Pro ; autres iPad : mono-objectif | **Gratuit**, sans achat intégré (dons) | Mode LiDAR : dossier **COLMAP prêt à entraîner** (poses ARKit) ; photo/vidéo : images + métadonnées | Idéal pour sauter l'étape COLMAP sur iPad Pro ; projet d'un seul développeur (pérennité à surveiller) |
-| **Voxelio 3D LiDAR Scanner** v1.3.0 | Oui, sur l'appareil, **petites scènes seulement** ; export du dataset (poses) pour PC | Oui : mesh OBJ, nuage PLY, RoomPlan, Space Mode | Sur appareil | iPadOS 18+, **LiDAR requis** | Gratuit avec quota hebdomadaire non publié et filigrane sur plans/vidéos ; Pro Lifetime 179,99 € ou 2,99 / 9,99 / 99,99 € | SPZ, OBJ+MTL, STL, PLY, USDZ, plan 2D | Prometteur mais très jeune (juillet 2026) ; pas pour un environnement en splat |
-| **Modelar** v3.1.2 | Non | Oui : nuage de points et mesh LiDAR temps réel | Sur appareil | iPadOS 18.6+, **iPad Pro LiDAR uniquement** | **Gratuit**, sans achat intégré | Mesh GLB, USDZ, OBJ, STL, PLY ; nuage **E57, LAS**, PLY, CSV | Seule app gratuite trouvée avec E57/LAS : pièces et bâtiments parcourus à pied |
-| **3D Scanner App** v2.5 | Non | Oui (LiDAR, photo, RoomPlan) | Les deux | iPadOS 14.1+ ; LiDAR pour le mode LiDAR | Téléchargement gratuit mais **abonnement de fait depuis mai 2026** (34,99 € ou 79,99 €/an en France), app revendue en 2025 | USDZ, OBJ, GLTF, GLB, DAE, STL, PTS, PCD, PLY, XYZ, LAS, DXF | À éviter désormais (avis massivement négatifs sur le paywall) |
-| **Reality Composer / Object Capture** (Apple) | Non | Oui, **objets uniquement** (USDZ, niveau « reduced ») | Sur appareil | iPad Pro 2021+ (LiDAR + A14) | Gratuit, mais plus mis à jour depuis octobre 2023 | USDZ | Inadapté aux environnements (mode « area » limité à ≈ 1,8 m) |
-| **Record3D** v1.11 | Non (capture RGBD + poses ARKit) | Nuage/mesh image par image, pas de fusion | Ordinateur | iPad Pro LiDAR | Basic 4,99 €, Full 5,99 € (achat unique) | EXR + JPG + poses → `ns-process-data record3d` | Source de poses fiable pour Nerfstudio, LiDAR obligatoire |
-| **Spatial Fields** v1.3.0 | Visionneuse seulement (PLY, SPZ, LCC, USDZ) avec **mode AR** | Non | Sur appareil | iPadOS 18.6+ | 29,99 € (achat unique) | Aucun | Optionnel : le plus beau viewer AR natif iPad ; plantages signalés sur gros splats |
-
-Écartés après vérification : **Luma 3D Capture** (iPhone seulement, plus de splat dans l'app, Genie fermé) ; **Splatcatcher** (ex-SplatCam, iPhone Pro seulement) ; **NeRFCapture** (abandonné depuis 2023) ; **Spectacular Rec** (app figée en 2024, SDK Windows/Linux non commercial) ; **PhotoCatch** (maintenance minimale, abonnements opaques).
-
-### 3.2 Traitement sur ordinateur
-
-| Solution | Splat | Mesh / scan | Plateforme / GPU | Gratuit ? Prix 2026 | Exports | Verdict |
-|---|---|---|---|---|---|---|
-| **3D Splat App** (Laan Labs) v0.3.1 | Oui, entraînement local Metal depuis photos, vidéo ou vidéo 360 (Fast ≈ 2 min, Medium ≈ 5, HD ≈ 20) | Non | **Mac M1+**, macOS 15.6+, 16-32 Go RAM | **Gratuit** (Mac App Store, sans achat intégré) | PLY, PLY compressé, SPZ, SOG, vidéo | Le maillon « splat gratuit sur Mac » le plus simple (COLMAP intégré) ; app jeune (mars 2026), sans doc officielle |
-| **Brush** (A. Brussee) v0.3.0 | Oui, tout GPU (Apple, AMD, NVIDIA, Intel), visualisation en direct, jusqu'à 10 M de splats | Non | Mac Apple Silicon, Windows, Linux, Chrome/Edge | **Gratuit** (Apache-2.0) | PLY (lisible par SuperSplat) | Exige des poses COLMAP ; ≈ 3 h 30 pour 30 000 itérations sur un MacBook Air (témoignage unique) ; binaires figés à v0.3.0, le code récent (1.0.0) se compile |
-| **OpenSplat** (WebODM) v1.2.2 | Oui (CLI), entrée COLMAP / ODM / Nerfstudio | Non (voir ODX/WebODM pour le mesh) | Mac (Metal), Linux (CUDA/ROCm), Windows | Gratuit à compiler (AGPL) ; **binaire Windows 29 $** (une fois) | PLY, SPLAT, SPZ, RAD | Solide, sans interface ; ≈ 2 Go de VRAM par million de gaussiennes |
-| **LichtFeld Studio** (MrNeRF) v0.5.3 | Oui, GUI complète (entraînement, édition, LOD, HTML) | Non | **Windows/Linux, NVIDIA RTX 20+ (CC 7.5+)** | Source gratuite (GPLv3, à compiler) ; binaire Windows via portail **30 $ minimum** ; ancien binaire v0.4.2 gratuit | PLY, SOG, SPZ, HTML, USD, RAD | La référence open source sur PC NVIDIA, très active |
-| **Postshot** (Jawset) v1.1.69 | Oui, GUI, SfM intégré | Non | **Windows 10+, NVIDIA RTX 2060+ uniquement** | Free : non commercial, filigrane, **pas d'export PLY/SPZ** ; Indie 17 €/mois (204 €/an) ou 26 €/mois ; Studio 39 €/mois (468 €/an) | Indie : PLY, SPZ v4, HTML ; plugins Unreal 5.4-5.8 et After Effects | Très confortable, mais inutilisable gratuitement pour partager un splat |
-| **RealityScan 2.2 desktop** (ex-RealityCapture, Epic) | Non (exporte les caméras COLMAP pour un entraîneur) | **Oui, toute échelle** (photos, vidéo, laser, drone) | **Windows** (NVIDIA CUDA ou AMD RDNA 3/4 depuis juin 2026), Linux CLI expérimental, pas de Mac | **Gratuit** sous 1 M$ de revenus annuels (1 250 $/siège/an sinon) ; compte Epic | OBJ, PLY, GLB, STL, USDZ, FBX, DAE, LAS, XYZ… + COLMAP, CSV/PLY (Postshot) | La voie mesh gratuite la plus puissante pour un bâtiment ou un circuit |
-| **COLMAP 4.2.0** (+ GLOMAP intégré) | Non (poses + nuage épars pour Brush / OpenSplat / LichtFeld / Nerfstudio) | Nuage dense et mesh **avec CUDA/ROCm seulement** | Windows (binaires), **Mac arm64** (binaire, Homebrew), Linux | **Gratuit** (BSD) | Modèle sparse BIN/TXT, PLY | Brique universelle ; le « global mapper » (GLOMAP) est 10-100× plus rapide que l'incrémental |
-| **Apple Object Capture** (Reality Composer Pro, PhotoCatch) | Non | Oui, objets et zones ≤ ≈ 1,8 m ; jusqu'à 2 000 images sur Mac | Mac (Apple Silicon) | Gratuit (Xcode) | USDZ, OBJ | Excellent pour un objet ou un mur, pas pour une pièce entière |
-| **Nerfstudio** (splatfacto) v1.1.5 | Oui | Non depuis splatfacto | Linux/Windows, NVIDIA (≈ 6 Go VRAM) | Gratuit | PLY | **Projet quasi à l'arrêt** (dernière release nov. 2024, dernier commit juil. 2025) ; ses convertisseurs `ns-process-data polycam / record3d` restent utiles |
-| **Agisoft Metashape Standard** 2.3.2 | Non (export caméras COLMAP) | Oui, robuste, toute échelle | Windows, **Mac**, Linux | 179 $ (licence perpétuelle), essai 30 jours | Nombreux formats + COLMAP | La photogrammétrie payante la moins chère qui tourne sur Mac |
-
-### 3.3 Cloud
-
-| Solution | Ce qu'on obtient | Gratuit ? | Limites du gratuit | Verdict |
-|---|---|---|---|---|
-| **Splatware** (Berlin) | Splat entraîné dans le cloud depuis vidéos/photos iPad, éditeur, viewer, lien de partage | Free : modèles « Lite » illimités (≤ 1,5 M gaussiennes, 8-12 min) ; Creator 9,95 € le 1er mois puis 19,95 €/mois ; Pro 79,95 €/mois | 5 projets, 3 exports/jour, 500 images ou 3 vidéos (0,5 Go) par projet, pas de mesh, plan « modifiable sans préavis » | La seule voie **cloud gratuite sans ordinateur** vérifiée pour transformer une vidéo iPad en splat exportable (PLY, .SPLAT) ; qualité « Lite » |
-| **Google Colab** | Notebook GPU (T4 16 Go) pour COLMAP + OpenSplat / gsplat / 3DGS | Gratuit (GPU non garanti, ≤ 12 h) ; Pro 9,99 $/mois (100 unités), Pro+ 49,99 $ | Coupures, GPU parfois indisponible, pas d'exécution en arrière-plan | Faisable pour une pièce ou une façade (100-300 images réduites) ; notebook Nerfstudio officiel cassé, préférer OpenSplat |
-| **Kaggle Notebooks** | Idem avec 2 × T4 | Gratuit ≈ 30 h GPU/semaine, sessions 12 h, vérification SMS | 4 cœurs CPU (COLMAP lent), 20 Go de sortie | Plus généreux que Colab en heures ; P100 retiré le 15/09/2026 |
-| **Niantic Spatial cloud** (New Scaniverse) | Splats cloud « plus réalistes », fusion multi-scans en « Sites », 360°, USDZ splat+mesh | Free 20 000 crédits/mois (≈ 11 min) ; Plus 20 $/mois ; Pro 50 $/mois | 30 crédits/s de capture ; 360° et USDZ réservés à Plus/Pro ; droits commerciaux en Pro | Le prolongement naturel de Scaniverse pour un bâtiment entier |
-| RunPod / Vast.ai (non revérifiés) | GPU à l'heure (RTX 3090/4090 ≈ 0,12-0,34 $/h) | Payant à l'usage | Compétences Docker/SSH | < 1 € par scène si l'on sait s'en servir |
-
-### 3.4 Visualiser, éditer, convertir
-
-| Solution | Rôle | Gratuit ? | Notes |
-|---|---|---|---|
-| **SuperSplat 3.3** (PlayCanvas) | Nettoyage, crop, couleur, rendu, export, publication superspl.at | Gratuit (MIT), compte PlayCanvas gratuit pour publier | Navigateur WebGPU (Chrome/Edge, Safari 26+, donc Safari sur iPadOS 26/27 en principe, sans validation officielle) ; import PLY/SPZ/SOG/SPLAT/KSPLAT/LCC ; export PLY, SOG, SPZ, HTML autonome |
-| **splat-transform** (CLI PlayCanvas) | Conversion PLY/SPZ/SOG/SPLAT/KSPLAT/LCC, fusion, LOD, transformation | Gratuit (MIT) | `npm install -g @playcanvas/splat-transform` (non revérifié) |
-| **SPZ 4** (Niantic Spatial) | Format compressé ouvert, ≈ 10× plus petit que PLY | Gratuit | Convertisseur web local sur nianticspatial.com/spz-converter |
-| **Spark 2.0** (World Labs, three.js) | Viewer web à intégrer dans un site | Gratuit (MIT) | Fonctionne sur iOS (WebGL2) ; remplace GaussianSplats3D (non maintenu). Non revérifié |
-| Unity / Unreal / Blender / Godot | gsplat-unity (maintenu) ; XGRIDS LCC-3DGS plugin (UE 5.1-5.8, gratuit) ; add-on **3DGS Render by KIRI Engine** (gratuit) puis import natif prévu dans Blender 5.3 ; GDGS | Gratuits | Non revérifiés individuellement ; le plugin Unreal de Luma est abandonné |
+| Solution | Splat | Mesh / scan | Traitement | iPad / LiDAR | Gratuit ? / prix 2026 | Droits commerciaux | Exports | Verdict environnement |
+|---|---|---|---|---|---|---|---|---|
+| **Scaniverse** (Niantic Spatial) | Oui, sur l'appareil, 1–2 min | Oui (LiDAR ou photogrammétrie) | Appareil + cloud optionnel | iPadOS 16.6+, A12+ ; LiDAR facultatif | **Gratuit illimité** (Classic) ; cloud Free 20 000 crédits/mois, Plus 20 $/mois ou 200 $/an, Pro 50 $/mois ou 500 $/an | **Non en gratuit** — Pro ou Enterprise exigé | SPZ, PLY, OBJ, FBX, USDZ, LAS | **Excellent pour une pièce** ; par morceaux pour un bâtiment ; non pour une piste. Cloud : **5 min et 500 m² max par scan** |
+| **Polycam** | Oui, **payant** (cloud) | Oui (LiDAR + Space non-LiDAR, local) | Appareil + cloud | iPadOS 18+ ; LiDAR facultatif | Free 0 $ (GLTF seul, **pas de splat**) ; Basic 150 $/an ; Business 400 $/an | Non documenté | GLTF (Free) ; OBJ/FBX/STL/USDZ (Basic) ; PLY/LAS (Business) | Bon pour pièces ; crashs mémoire dès 2–3 pièces, pertes de scans après mise à jour (§4, étape 5) |
+| **KIRI Engine** | Oui, **Pro uniquement** | Oui, gratuit (Photo Scan 150 photos / 2 Go ; LiDAR) | Cloud (sauf LiDAR) | iPadOS 15+ ; LiDAR pour Room/Scene | Basic 0 $ ; **Pro 17,99 $/mois ou 79,99 $/an** | Non documenté | OBJ, STL, FBX, GLTF, GLB, USDZ, **PLY, XYZ** (nuage) | Correct pour pièce ; 3 min de vidéo max ; **rétention 3 jours documentée côté API** |
+| **Modelar** (3D LiDAR Scanner) | **Non** | Oui — nuage + maillage texturé, sur l'appareil | Appareil | **iPad Pro LiDAR uniquement** | **Gratuit, 0 €**, sans abonnement, sans pub, sans filigrane | Non documenté | **Nuage : E57, LAS, PLY, CSV** ; **mesh : GLB, USDZ, OBJ, STL, PLY** | Le seul chemin gratuit vers E57/LAS sur iPad ; **aucun splat, aucun repli photogrammétrie** |
+| **RealityScan Mobile** (Epic) | **Non** | Oui (objets) | Cloud | iPadOS 16+ ; LiDAR non utilisé | **Gratuit**, « all exports completely free » | **Oui** (EULA : « any lawful purpose ») | OBJ, USDZ | Objets seulement, 300 images max — utile en **repli mesh** |
+| **Apple Object Capture** — Reality Composer Pro / PhotoCatch | **Non** | **Oui, mesh texturé** | Ordinateur (Mac) | Photos prises avec **n'importe quel iPad**, LiDAR ou non | **Gratuit** (Reality Composer Pro livré avec Xcode ; PhotoCatch Mac gratuit avec restrictions non documentées) | Non documenté | **USDZ, OBJ** | **Seule voie native Mac sans ligne de commande.** Conçu pour objets et zones : au-delà d'**≈ 1,80 m** la qualité se dégrade sauf traitement à un niveau de détail supérieur ; plafond **≈ 2 000 images** ; **pas d'échelle réelle** si les photos ne viennent pas d'un appareil LiDAR |
+| **Meshroom** (AliceVision) | Non (plugin expérimental, non utilisable) | **Oui, mesh texturé + nuage densifié** | Ordinateur | — | **Gratuit, MPL2** | **Oui** | OBJ/MTL + textures, Alembic, nuages | Alternative libre à RealityScan sur PC. **Interface graphique nodale.** Deux réserves : **sans GPU NVIDIA CUDA on se limite au « Draft Meshing »**, qui maille le seul nuage épars et donne un aperçu grossier inexploitable ; **aucun build macOS officiel** |
+| **Teleport by Varjo** | Oui | **Non** | Cloud | iPadOS 17+ ; sans LiDAR | Essai 5 captures puis **à partir de 30 $ prépayés**, facturation au nombre d'images | Non documenté | PLY (payant) | Bon pour lieux, mais aucun mesh |
+| **Voxelio** | Oui, sur l'appareil | Oui (LiDAR) | Appareil | **LiDAR requis** | Gratuit limité ; Pro à vie 179,99 € | Non documenté | SPZ, OBJ, PLY, USDZ, STL | Splat « petites scènes » seulement |
+| **3D Scanner App** | Non | Oui | Les deux | LiDAR pour l'essentiel | **Abonnement de fait** (≈ 35–80 €/an) | Non documenté | OBJ, GLTF, USDZ, PLY, LAS, DXF | À éviter en 2026 (paywall, réseau obligatoire) |
+| **Gaussian SplatKing** | Capture seule | Nuage LiDAR seul | Ordinateur ensuite | iPadOS 18+ ; LiDAR facultatif | **Gratuit** | Oui (vous restez propriétaire des captures) | COLMAP, JPEG/RAW, MOV | Capteur pour pipeline PC |
+| **Record3D** | Capture RGBD seule | Nuages PLY par frame | Ordinateur ensuite | **iPad Pro LiDAR uniquement** (« FaceID ou LiDAR », absents des iPad Air/mini/standard) | ≈ **4–6 €** (achat unique) | Non documenté | EXR+JPG + poses, PLY, OBJ, FBX, glTF | **Poses ARKit ingérables par `ns-process-data record3d` — supprime COLMAP.** Pendant payant de Spectacular Rec |
+| **Spectacular Rec** + `sai-cli` | Via dataset Nerfstudio | Nuage / mesh OBJ (beta) | Ordinateur (Win/Linux x86) | **iPadOS 17+, LiDAR non requis** — *mais voir réserve ci-dessous* | **Gratuit**, SDK « free for non-commercial use » | **Non — usage non commercial** | transforms.json + images + COLMAP texte + sparse_pc.ply | **Supprime l'étape COLMAP** ; échelles documentées « table » et « room » seulement ; app iOS figée depuis mars 2024. **L'iPad figure dans la compatibilité App Store mais n'apparaît nulle part dans la documentation de l'éditeur, qui ne parle que d'iPhone : à tester avant de bâtir un pipeline dessus** |
+| **3D Splat App** (Mac) | **Oui, local Metal** | **Non** | Ordinateur | — (Mac M1+, macOS 15.6+) | **Gratuit, 0 €**, aucun achat intégré | Non documenté | **PLY, PLY compressé, SPZ, SOG** | Pièces et bâtiments : 150–400 images pour une pièce, 400+ pour un bâtiment |
+| **RadianceKit** (Mac) | Oui, local Metal | Non | Ordinateur | — | **7,99 $ US, achat unique** | Non documenté | PLY, SPZ, SOG, glTF, .splat | Pièce et grande scène, sans plafond |
+| **SplatScene** (Mac) | Oui, local | Non | Ordinateur | — | 3 exports gratuits ; 34,99 $/an | Non documenté | PLY | Non documenté |
+| **Brush** | Oui, local | Non | Ordinateur | — | **Gratuit, Apache-2.0** | **Oui** | PLY | Scènes entières ; **Mac/Windows/Linux, AMD/Nvidia/Intel** ; **binaires précompilés**, interface via `--with-viewer` |
+| **OpenSplat** | Oui, local | Non (consomme un SfM) | Ordinateur | — | **Gratuit (à compiler)** ; binaire Windows 29 $ | **Oui** (AGPLv3) | **PLY, .splat, SPZ, .rad** | Scènes entières ; **CUDA / ROCm / Metal / CPU** ; ≈ 2 Go de VRAM par million de gaussiennes |
+| **Postshot** | Oui | Non | Ordinateur | — | Free non commercial **sans export** ; Indie 204 €/an | Non en Free ; oui en Indie/Studio | PLY, SPZ (payant) | **Windows + NVIDIA obligatoires** |
+| **LichtFeld Studio** | Oui | Non | Ordinateur | — | Gratuit compilé ; binaire **30 $ US** | Oui (GPLv3) | PLY, SOG, SPZ, HTML, USD | Scènes 10 M gaussiennes ; **NVIDIA CC 7.5+** |
+| **gsplat / nerfstudio** | Oui | Non (splatfacto) | Ordinateur | — | **Gratuit, Apache-2.0** | Oui | PLY (avec `--save_ply`) | Excellent, **GPU NVIDIA requis** |
+| **COLMAP 4.2** | Poses seulement | Oui (dense, CUDA) | Ordinateur | — | **Gratuit, BSD** | Oui | COLMAP, PLY, LAS | Toutes tailles ; lent |
+| **RealityScan desktop 2.2** | Non | Oui, excellent | Ordinateur | — | **Gratuit < 1 M$ de revenus** | Oui sous ce seuil | OBJ, FBX, GLB, USDZ, LAS… | Meilleur mesh gratuit ; **pas de macOS** |
+| **ODM / WebODM** | Via OpenSplat | Oui + orthophoto + DSM | Ordinateur | — | **Gratuit, AGPLv3** | Oui | PLY, LAZ, OBJ, GeoTIFF | Extérieurs, drone, pistes |
+| **MeshLab / CloudCompare** | Non | **Post-traitement** (nettoyage, décimation, Poisson) | Ordinateur | — | **Gratuit** (GPL) | Oui | OBJ, PLY, STL, E57, LAS, GLTF… | **Indispensable en aval du mesh** (§5.5) |
+| **SuperSplat** | Édition/publication | Non | Navigateur | Safari 26+ possible | **Gratuit, MIT** | Oui | PLY, SOG, SPZ, HTML | Indispensable en aval |
+| **splat-transform** | Conversion/fusion | Collision voxel + GLB | Ordinateur (Node) | — | **Gratuit, MIT** | Oui | PLY, SOG, SPZ, GLB, CSV | Assemblage multi-zones |
+| **Splatware** | Oui (cloud) | Payant | Cloud | Navigateur | Free 0 € (Lite illimité, 5 projets, 3 exports/jour) ; Creator 9,95 € puis 19,95 €/mois | Oui en Free | PLY, .splat | Pièce en gratuit, **sans app ni LiDAR** |
 
 ---
 
-## 4. Pipeline recommandé (gratuit, tout sur l'iPad)
+## 4. Pipeline recommandé (gratuit) — étape par étape
 
-Objectif : obtenir, en moins d'une heure, un splat et un maillage d'une pièce (ou d'une zone extérieure de 200 à 500 m²), sans ordinateur ni abonnement.
+**Durée réaliste : 35 à 50 minutes. Coût : 0 €.**
+**Une seule capture, deux livrables** (splat + mesh) : c'est l'étape 5 qui matérialise cette promesse.
 
-### Étape 0 — Préparer (5 min)
+### Étape 0 — Test de compatibilité (10 min, obligatoire)
 
-- Installez **Scaniverse** (App Store, gratuit). Sur iPad Pro, installez aussi **KIRI Engine** (compte gratuit « Basic ») et, si vous voulez des nuages E57/LAS, **Modelar**.
-- Batterie > 80 %, 10 à 15 Go libres, lentille nettoyée, mode Ne pas déranger.
-- Allumez toutes les lumières, fermez les stores (ou sortez par ciel couvert), retirez les personnes et les objets mobiles de la zone. Sur les murs blancs, collez quelques repères texturés temporaires (post-it, affiches) pour aider le suivi.
-- Découpez mentalement la scène : **une capture par pièce** (ou par tronçon de 30-50 m en extérieur), avec un chevauchement visible aux portes et aux transitions.
+Installez **Scaniverse** et **restez sur l'expérience « Classic / Legacy »** : ne créez pas de compte, ne migrez pas vers « New Scaniverse » (cloud à crédits). Faites un scan **Splat** de 60 s dans une pièce. Vérifiez trois choses : le mode Splat existe, le traitement aboutit en 1–2 min sans réseau, l'export PLY/SPZ fonctionne.
 
-### Étape 1 — Capturer le splat avec Scaniverse (3 à 5 min par zone)
+> **Où cliquer ?** Le libellé exact de l'écran d'accueil varie selon la version. Le test qui tranche est le suivant : si le sélecteur de mode propose **Splat** à côté de Mesh, vous êtes bien dans l'expérience Classic.
 
-1. Ouvrez Scaniverse, choisissez le mode **Splat**. Sur un iPad Pro, laissez le LiDAR actif (meilleurs résultats) ; sur un iPad sans LiDAR, l'app bascule d'elle-même (option « Ignore LiDAR » disponible dans les réglages).
-2. Commencez sur une zone riche en détails (pas sur un mur uni).
-3. **Déplacez-vous avec les pieds**, jamais en pivotant sur place : faites le tour du périmètre, puis traversez le centre, en 3 passes (à niveau, en visant vers le haut pour le plafond, vers le bas pour le sol). Variez hauteur, inclinaison et distance (restez à 0,5-3 m des surfaces).
-4. Marchez lentement (5 à 10 cm/s, deux fois moins vite que naturel), gardez toujours dans le cadre des éléments déjà capturés, ralentissez et marquez une pause avant et après chaque porte.
-5. **Arrêtez entre 1 et 3 minutes** (l'app avertit à 180 s ; plafond 5 min et 500 m²). Un scan court et bien couvert vaut mieux qu'un scan long avec des trous.
-6. Lancez le traitement (1 à 2 min sur l'appareil, hors ligne). Vérifiez : zones floues = manque de couverture, refaites la passe correspondante. L'amélioration peut être relancée (les utilisateurs conseillent une qualité d'amélioration ≤ 5).
-7. Répétez pour chaque pièce / tronçon.
+> **Piège** : la migration vers New Scaniverse est à sens unique ; des avis 2026 signalent l'impossibilité de revenir à Classic sans désinstaller et perdre ses scans.
 
-### Étape 2 — Capturer le maillage (5 à 10 min par zone)
+> ### Plan B si le mode Splat n'apparaît pas (iPad 8, mini 5, Air 3 — puces A12/A13)
+> Trois replis, par ordre d'effort croissant :
+> 1. **Splatware Free** — 0 €, **100 % navigateur, sans app** : déposez une vidéo (jusqu'à 3 vidéos / 0,5 Go par projet), modèle « Lite » illimité, 5 projets, 3 exports/jour, usage commercial autorisé. C'est le chemin le plus court vers un splat depuis un iPad qui ne sait pas en calculer.
+> 2. **Teleport by Varjo** — 5 captures d'essai gratuites, iPadOS 17+, sans LiDAR. Attention : aucun mesh, et l'export .ply est payant.
+> 3. **Le pipeline §5** — filmez avec l'iPad, traitez sur ordinateur. C'est la seule voie qui ne dépend d'aucune app iPad.
 
-- **iPad Pro (LiDAR)** : dans Scaniverse, mode **Mesh** (portée « Range » 5 m max), mêmes trajectoires, 60 s à 3 min par pièce ; ou **KIRI Engine › LiDAR Scan › Scene Scan** (gratuit, local, hors ligne, export OBJ/USDZ) ; ou **Modelar** pour un nuage de points E57/LAS et un mesh GLB.
-- **iPad sans LiDAR** : dans Scaniverse, mode **Mesh** en photogrammétrie (le mesh sera plus lisse et moins détaillé que le cloud de Polycam) ; ou **KIRI Engine › Photo Scan** (150 photos par scan, gratuit, cloud) pour un objet ou une petite zone ; ou **RealityScan Mobile** (20-300 photos, gratuit, cloud, orienté objets).
-- Si vous prévoyez de retraiter plus tard, activez dans Scaniverse la conservation des données brutes (« Reprocess Scan » permet de recalculer en splat ou en mesh).
+### Étape 1 — Réglages avant le premier scan (3 min)
 
-### Étape 3 — Exporter (2 min)
+Dans Scaniverse : **activez la sauvegarde des données brutes**. Sans ce réglage, « Reprocess Scan » n'apparaîtra pas et il faudra refaire un scan complet. **Ce réglage n'est pas rétroactif.**
 
-- Splat : **SPZ** (léger, pour le web et le partage) et **PLY** (universel, pour Blender/Unity/Unreal/SuperSplat). Enregistrez dans Fichiers ou iCloud Drive.
-- Mesh : **OBJ** (+ textures) ou **USDZ** (Quick Look AR sur iPad) et **GLB** ; nuage de points en **LAS** si nécessaire.
-- Partage immédiat : lien Scaniverse, ou USDZ ouvert en réalité augmentée directement dans Fichiers.
+> **Le libellé exact varie selon la version.** Cherchez dans les Réglages une option du type *Save raw data* / *Keep capture data*. **Le test qui prouve que c'est actif** : faites un scan de 20 s, ouvrez-le, pressez l'icône « **…** » en haut à droite — si l'entrée **Reprocess Scan** est présente, le réglage est bon. Le support officiel formule la condition ainsi : le retraitement n'est possible que « *provided you have the raw data saved* ».
 
-### Étape 4 — Nettoyer et publier avec SuperSplat (10 à 20 min)
+Activez « **Ignore Lidar** » si votre iPad n'a pas de LiDAR, ou si la pièce dépasse 5 m, ou en cas d'erreur « Scan Error » avec rayures rouges (contournement officiel donné par le support en mars 2026).
 
-1. Ouvrez `https://superspl.at/editor` (idéalement sur un Mac/PC ; Safari 26+ sur iPad prend en charge WebGPU mais l'éditeur n'est pas validé officiellement sur tablette).
-2. Importez le PLY ou le SPZ. Supprimez les « floaters » (brosse, sphère, lasso, ou sélection par faible opacité dans le panneau Splat Data), recadrez avec la boîte de crop, ajustez l'orientation et l'échelle.
-3. Exportez en **SOG** (15-20× plus petit) ou **SPZ**, ou générez un **viewer HTML autonome** ; ou publiez gratuitement sur superspl.at (compte PlayCanvas gratuit, scène « unlisted » par défaut, lien partageable, AR/VR WebXR).
+Côté iPadOS : **Ne pas déranger** (une notification casse le suivi), mode Avion, 10–15 Go libres, batterie > 80 %.
 
-### Étape 5 — Archiver
+### Étape 2 — Préparer la scène (5 min)
 
-Conservez : les exports PLY (source), les données brutes Scaniverse, le mesh OBJ/GLB. Notez la date et le modèle d'iPad : les apps changent vite.
+Allumez toutes les lumières et n'y touchez plus. Fermez les stores côté fenêtre : **Scaniverse n'a aucun verrou d'exposition**, un contre-jour ruine le splat. Dégagez un chemin de circulation. Sortez personnes et animaux.
 
-**Coût total : 0 €.** Durée pour une pièce : 15 à 30 min de bout en bout.
+**Posez un mètre pliant ouvert à 1,00 m au sol, bien visible — y compris sur iPad Pro.** L'échelle du splat n'est garantie nulle part : c'est votre étalon pour l'étape 7.
 
-**Pièges fréquents**
+Repérez un point de départ **riche en texture** — bibliothèque, tapis à motifs, plan de travail. Jamais un mur blanc nu.
 
-- Splat troué ou pièces déconnectées : manque de recouvrement (portes, couloirs) ou trop peu de changement de point de vue.
-- Dérive en extérieur ouvert : inclure des repères stables (arbres, bancs, arêtes), faire plusieurs passes.
-- Plein soleil, vitres, miroirs, surfaces brillantes : les points faibles de toutes les apps mobiles.
-- Très gros scan qui plante : découper en morceaux (réponse officielle de Niantic).
-- Fichiers Scaniverse « Free » : usage non commercial (les droits commerciaux du cloud sont dans le plan Pro à 50 $/mois ; le mode Classic n'énonce pas de droits explicites).
+### Étape 3 — Le scan splat (2–3 min)
+
+Mode **Splat**. Trois passes, en **marchant** — la doc officielle les décrit ainsi : « *Hold the device level to capture mid-level features such as walls and furniture. Tilt the device upwards to capture the ceiling. Tilt the device downwards to capture the floor.* »
+
+1. Tour du périmètre à hauteur des yeux, caméra vers le centre.
+2. Tour en inclinant vers le **haut** (plafond).
+3. Tour en inclinant vers le **bas** (sol, plinthes).
+
+Image mentale du support officiel : « imaginez que vous scannez un objet invisible au milieu de la pièce ». Tournez le **corps**, pas le poignet. Visez **90 à 120 s**.
+
+> **Piège** : ne dépassez jamais 180 s — l'app avertit elle-même, et le staff Niantic confirme que « very large splats can fail to process ». Ne pivotez jamais sur place : sans parallaxe, la reconstruction échoue. Une pièce = un scan.
+
+### Étape 4 — Contrôle immédiat (2–4 min)
+
+Le calcul se fait sur l'iPad. Inspectez plafond, sol, les quatre coins et les abords des fenêtres. Si c'est troué, **refaites tout de suite**, tant que l'éclairage est identique.
+
+> Si l'app se ferme pendant le traitement : splat trop gros. Faites deux scans de 60 s au lieu d'un de 150 s.
+
+### Étape 5 — Le mesh, depuis le même scan (3–5 min)
+
+**C'est ici que la capture unique paie deux fois.** Ouvrez le scan → icône « **…** » en haut à droite → « **Reprocess Scan** » → **Mesh**. Le même jeu de données est recalculé en maillage texturé.
+
+- **iPad Pro (LiDAR)** : mesh mesuré, à l'échelle réelle, mesures possibles dans l'app.
+- **iPad sans LiDAR** : bascule en photogrammétrie — texturé, mais échelle non garantie.
+
+**Alternative pour iPad Pro, si vous voulez un vrai nuage de points** : **Modelar — 3D LiDAR Scanner**, gratuit, sans abonnement, sans publicité et sans filigrane, traitement 100 % sur l'appareil. Exports **E57, LAS, PLY, CSV** pour le nuage et **GLB, USDZ, OBJ, STL, PLY** pour le maillage. C'est la seule solution gratuite de ce tableau qui donne de l'E57 et du LAS sur iPad. **Limites** : iPad Pro LiDAR uniquement, **aucun splat**, **aucun mode photogrammétrie de repli**.
+
+**Variante sans LiDAR, mesh de meilleure qualité** : utilisez **Polycam**, mode « **Space** » non-LiDAR (lancé le 14/01/2026 ; iPad Air 5 / mini 6 / iPad 10e gén. et plus récents, 4 Go de RAM). Traitement **local et hors ligne**, gratuit, export **GLTF** — seul format du plan Free, mais lisible par Blender, MeshLab et CloudCompare.
+
+> ### ⚠ Pièges Polycam 2026 — à lire avant de lancer une capture
+> Les retours 2026 sont sévères et documentés. Protocole minimal pour éviter la déception :
+> - **Une pièce par capture.** « *Never was able to scan more than 2-3 rooms before it quit* » ; « *crashes before I can finish a 750 sqft space* ». Polycam reconnaît que les plantages au traitement viennent « *presque toujours* » d'un manque de mémoire.
+> - **Sessions ≤ 30 min**, c'est la recommandation de l'éditeur lui-même.
+> - **Ne quittez pas l'app et ne laissez pas l'écran s'éteindre pendant le traitement** : « *Closing the app or letting your phone sleep… can cause it to fail* ».
+> - **Batterie ≥ 80 %**, batterie externe au-delà de 20–30 min, **10–15 Go libres**, **Ne pas déranger** activé.
+> - **Synchronisez et exportez AVANT toute mise à jour de l'app.** « *Updated the app and lost 80% of my scans* » — plusieurs témoignages concordants en 2026.
+> - Le quota de captures du plan Free n'est **pas chiffré publiquement** : ne bâtissez pas un projet dessus.
+>
+> **Replis si Polycam plante ou exige un compte** : **KIRI Engine Photo Scan** (gratuit, jusqu'à **150 photos / 2 Go par scan**, exports illimités et sans filigrane en OBJ/STL/FBX/GLTF/GLB/USDZ, plus les **nuages de points PLY et XYZ**) ou **RealityScan Mobile** (gratuit, « *the application and all exports are completely free of charge* », exports OBJ et USDZ sur iOS). Pensez à télécharger vite chez KIRI : **une rétention de 3 jours est documentée côté API — appliquez-la par prudence à l'app**.
+
+### Étape 6 — Exporter immédiatement (5 min)
+
+Splat → **SPZ** (format ouvert MIT, ≈ 10× plus léger) **et PLY** (maître, 64 à 632 Mo). Mesh → **USDZ** (pour l'AR), **OBJ/FBX**, **LAS** pour le nuage.
+
+> **Piège structurel** : les images et poses brutes **ne sortent jamais** de Scaniverse (« Scaniverse does not support exporting or transferring the raw capture data »). Un scan supprimé est perdu, « Transfer Scans » est signalé comme non fiable, et un scan raté **ne pourra jamais être rattrapé sur ordinateur**. Exportez le jour même.
+
+> ### Étape 6 bis — Où ranger tout ça (5 min, à faire une seule fois)
+> Un PLY de splat pèse **64 à 632 Mo par zone**, et une zone traitée au §5 mobilise **15 à 20 Go**. À trois ou quatre pièces, vous avez un problème de rangement, pas un problème de 3D. Arborescence qui se tient sur la durée :
+>
+> ```
+> ~/scans3d/
+> └── 2026-09-20_appartement/
+>     ├── 00_ETALON.txt          ← longueur réelle du mètre pliant + repère utilisé
+>     ├── zone01_salon/
+>     │   ├── raw/               ← vidéo .mov, ou export brut s'il existe
+>     │   ├── splat/             ← zone01.ply (maître) + zone01.spz (échange)
+>     │   ├── mesh/              ← zone01.usdz, zone01.obj (+ textures)
+>     │   └── work/              ← images/, undistorted/, sparse/ — SUPPRIMABLE
+>     ├── zone02_cuisine/
+>     └── assemblage/            ← maison.sog, transforms notés à l'étape 9
+> ```
+>
+> **Trois règles qui évitent les regrets :**
+> 1. **`work/` est jetable, `raw/` et `splat/` ne le sont pas.** Vous pouvez toujours régénérer `undistorted/` depuis la vidéo ; vous ne pouvez jamais régénérer un scan Scaniverse supprimé.
+> 2. **Gardez le PLY comme maître, diffusez en SPZ ou SOG.** Ne supprimez jamais le PLY après compression : SPZ et SOG sont des formats avec perte.
+> 3. **Sauvegardez `raw/` + `splat/` hors de la machine** (disque externe ou cloud) le jour de la capture. C'est ≈ 1 Go par zone — négligeable — et c'est la seule chose irremplaçable.
+
+### Étape 7 — Nettoyer, mettre à l'échelle, redresser (15–25 min)
+
+Ouvrez **superspl.at/editor** dans Chrome, Edge ou Safari 26+ (SuperSplat 3.0 exige WebGPU).
+
+1. **Nettoyer** : supprimez la grosse sphère de splats lointains que génère Scaniverse, puis les floaters. Outils : rectangle, brosse, polygone, lasso, pipette, flood, sphère, boîte — plus la sélection par **attributs** (faible opacité, échelle extrême), qui abat l'essentiel du travail.
+2. **Mettre à l'échelle** : outil **Measure**. Placez deux marqueurs sur les deux extrémités de votre mètre pliant, puis saisissez la longueur réelle : « *SuperSplat uniformly rescales the whole active splat around the midpoint of the two markers* ».
+3. **Redresser** : outil **Orient**. Trois points sur une surface qui devrait être de niveau : « *The whole active splat rotates and translates so the picked plane lands exactly on the grid plane* ».
+4. **Exporter** : PLY (maître), SPZ (échange), SOG (web).
+
+### Étape 8 — Partager, sans compte (5 min)
+
+- **Mesh** : le `.usdz` s'ouvre dans **Fichiers → Quick Look**, bouton AR pour le poser à l'échelle dans la vraie pièce. Aucune installation.
+- **Splat** : bouton Partager de Scaniverse → lien de la carte publique Classic.
+- **Splat, version soignée** : dans SuperSplat, **Publish** vers superspl.at (compte PlayCanvas gratuit) — compression SOG, streaming LOD au-delà d'un million de gaussiennes, lien « unlisted ». Ou export **Viewer App** en HTML autonome.
+
+### Étape 9 — Plusieurs zones : la méthode d'alignement, pas à pas
+
+Une pièce = un scan. Traversez les portes **très lentement** en gardant visible une portion de la pièce précédente.
+
+> **Cause n°1 d'échec, à connaître avant de capturer** : **sans zone de recouvrement réellement filmée entre deux scans, aucun alignement n'est possible a posteriori** — ni à la main, ni en cloud. Preuve chiffrée côté cloud : un utilisateur a soumis 13 scans à la fusion, **3 seulement ont été intégrés**, pour 30 210 crédits consommés, faute de recouvrement. **Le recouvrement se gagne à la capture, jamais au montage.**
+
+Procédure d'alignement dans SuperSplat, en quatre temps :
+
+1. **Poser la zone de référence.** Ouvrez `zone01.ply` seul. Mettez-le à l'échelle (**Measure**, sur le mètre pliant) et redressez-le (**Orient** → Align to Grid). **Ne touchez plus jamais à zone01** : c'est votre repère monde.
+2. **Importer la zone suivante dans la même scène.** Importez `zone02.ply` par-dessus. Sélectionnez-le dans le **Scene Manager** (panneau de scène), puis utilisez les outils **Move / Rotate / Scale** : « *Drag the gizmo handles in the viewport. For precise values, edit Position, Rotation, and uniform Scale in the Transform panel below the Scene Manager.* » Appuyez-vous sur un élément physiquement commun aux deux scans — **un chambranle de porte est le meilleur repère** : il est vertical, à arêtes franches, et visible des deux côtés.
+3. **Relever les valeurs.** Une fois l'alignement visuellement correct, **notez les valeurs de Position et de Rotation affichées dans le panneau Transform**. Ce sont elles, et elles seules, qui vous permettront de reproduire l'opération.
+4. **Rejouer en ligne de commande** pour un export reproductible et scriptable (§8) : `splat-transform` accepte exactement ces valeurs via `-t` (translation) et `-r` (rotation). C'est ce qui transforme un montage manuel en procédure rejouable.
+
+> **Limite dure** : Scaniverse Classic **ne fusionne pas** les scans — chaque zone reste un fichier isolé.
+> **Côté cloud** : le cloud Scaniverse sait fusionner plusieurs scans dans un **Site**, mais **la page tarifs ne précise pas à partir de quel palier cette fonction est ouverte**, et des sources secondaires l'attribuent à Plus/Pro. Le plan Free donne 20 000 crédits/mois (≈ 10–11 min de capture) : **testez la fusion sur deux scans courts avant d'en dépendre, et n'achetez Plus qu'après confirmation.**
 
 ---
 
 ## 5. Pipeline « qualité supérieure » (ordinateur ou GPU cloud gratuit)
 
-Le splat calculé sur l'iPad plafonne (benchmark tiers : ≈ 85 % de la qualité d'un entraînement complet sur GPU). Pour un rendu nettement meilleur, capturez sur iPad et entraînez ailleurs.
+À n'entreprendre que si vous butez sur les trois murs du gratuit. Comptez **une journée** pour la première pièce.
 
-### 5.1 Capture soignée sur iPad (commune à toutes les variantes)
+> ### ⚠ Ce qu'il faut installer d'abord, AVANT de filmer
+> Chaque commande de cette section suppose un outil déjà installé. Les installer après avoir filmé et transféré plusieurs gigaoctets est le meilleur moyen d'abandonner en cours de route. **Comptez 30 à 60 minutes d'installation la première fois.**
+>
+> **Pour tout le monde :**
+> - **ffmpeg** (extraction des images, §5.2) : `brew install ffmpeg` (macOS) · `winget install ffmpeg` (Windows) · `sudo apt install ffmpeg` (Linux).
+> - **COLMAP** (poses caméra, §5.3) : voir les commandes d'installation au début du §5.3.
+> - **Node.js LTS** (pour `splat-transform`, §8) : depuis nodejs.org, puis `npm install -g @playcanvas/splat-transform`.
+>
+> **Selon la voie d'entraînement choisie (§5.4) — une seule suffit :**
+> - **3D Splat App** (Mac) : rien à installer d'autre, un clic sur le Mac App Store. **C'est la voie la plus courte.**
+> - **Brush, binaire** : rien à installer, téléchargez l'archive de votre système. **Voie recommandée hors Mac.**
+> - **Brush, compilé** : `rustup` (rustup.rs), Rust 1.88+, puis `cargo run --release`. **À ne faire que si vous voulez la branche main.**
+> - **gsplat** (PC NVIDIA) : **Python 3.10**, un environnement virtuel ou **conda**, et le **toolkit CUDA correspondant à votre pilote** — la compilation CUDA de gsplat se fait **en JIT au premier lancement**, donc une version de CUDA incohérente ne se révèle qu'à ce moment-là.
+>
+> **Testez chaque outil avec `ffmpeg -version`, `colmap -h`, `node -v` AVANT de partir filmer.**
 
-- Vidéo **4K 30 fps** avec **exposition, ISO, balance des blancs et mise au point verrouillés** : appui long dans l'app Appareil photo (verrou AE/AF), ou mieux l'app gratuite **Blackmagic Camera** (iPadOS 18+, obturateur fixe 1/100 à 1/250 selon la lumière, H.265 pour limiter la taille ; 4K maximum sur iPad).
-- Ou des **photos** (100 à 300 par pièce, 400 et plus pour un bâtiment) : plus de contrôle et de netteté ; chaque surface vue depuis au moins 3 positions, recouvrement 70-80 %.
-- Pas d'ultra grand-angle, pas de flou, pas de zoom ; trajectoires identiques à l'étape 1.
-- Sur iPad Pro, **Gaussian SplatKing** (gratuit) enregistre en mode LiDAR un **dossier COLMAP prêt à entraîner** (poses ARKit) : vous sautez l'étape la plus longue. En mode photo/vidéo il fournit des images bien contrôlées et une note de qualité par image, mais COLMAP reste nécessaire.
-- Alternative sur iPad Pro : **Polycam** en mode LiDAR ou Room, avec « Developer mode » activé **avant** la capture, puis Export › Raw data (.zip, disponible sur le plan gratuit d'après le README officiel de Polyform) → `ns-process-data polycam`.
+### 5.1 Capture vidéo à exposition verrouillée
 
-### 5.2 Variante Mac Apple Silicon (0 €)
+Scaniverse n'a pas de verrou d'exposition. Filmez avec **Blackmagic Camera** (gratuit, iPadOS 18+) : **4K 30 fps H.265**, ISO et balance des blancs fixes, appui long pour verrouiller AF+AE. *(Sur iPad le plafond est 4K ; le 8K annoncé est réservé à Android.)*
 
-**Chemin simple :** transférez la vidéo (AirDrop) et ouvrez-la dans **3D Splat App** (Mac App Store, gratuit, M1+, macOS 15.6+). Choisissez le preset **HD** (≈ 20 min ; une pièce détaillée peut prendre 20 min à 1 h selon le Mac). Exportez en SPZ/SOG/PLY, puis nettoyez dans SuperSplat.
+**Vitesse d'obturation :** assez courte pour figer le mouvement — en pratique **1/250 s et plus**. La seule consigne éditeur vérifiée est celle de Postshot : « *Prefer short exposure times and small apertures to avoid both motion blur and defocus blur* », et il vaut mieux monter l'ISO que rallonger la pose, car « *radiance fields tend to tolerate noise better than blur* ». **Les valeurs chiffrées qui circulent en communauté (1/250 en photo, 1/400–1/500 en vidéo) n'ont aucune source éditeur** — traitez-les comme des ordres de grandeur, pas comme un réglage prescrit.
 
-**Chemin open source :** COLMAP puis Brush.
+### 5.1 bis — Sortir les rushes de l'iPad (5 min, à régler AVANT de filmer)
 
-```bash
-# 1) Extraire 2 images/s de la vidéo, redimensionnées à 1920 px de large
-brew install ffmpeg colmap
-mkdir -p scene/images
-ffmpeg -i capture.mov -vf "fps=2,scale=1920:-2" -q:v 2 scene/images/frame_%04d.jpg
+Le §5.2 lance `ffmpeg -i zone01.mov` comme si le fichier était déjà sur l'ordinateur. Il ne l'est pas, et une vidéo 4K de 2 min pèse de l'ordre du **gigaoctet**.
 
-# 2) Poses avec COLMAP 4.x (global mapper = GLOMAP intégré, 10-100x plus rapide)
-cd scene
-colmap feature_extractor --database_path db.db --image_path images \
-  --ImageReader.single_camera 1 --ImageReader.camera_model OPENCV
-colmap sequential_matcher --database_path db.db
-# frames vidéo sans EXIF : calibrer d'abord les focales
-colmap view_graph_calibrator --database_path db.db
-colmap global_mapper --database_path db.db --image_path images --output_path sparse
-# (vérifiez les noms d'options avec `colmap global_mapper --help` : ils évoluent entre versions)
+**Avant de filmer**, dans Blackmagic Camera : **Réglages → Media → Save Clips To → `Files`** (les trois options sont *In-App Only*, *In-App and Photo Library*, et *Files to internal or external storage*). **Avec le réglage par défaut, vos rushes ne seront pas dans l'app Fichiers** et vous les chercherez longtemps.
 
-# 3) Entraîner le splat dans Brush (binaire Apple Silicon v0.3.0 ou compilation de main)
-#    Interface : Load › choisir le dossier "scene" (images + sparse/0) › Train
-#    Export PLY automatique toutes les 5 000 itérations, 30 000 par défaut
-```
+**Ensuite, trois voies de transfert :**
+- **SSD USB-C** : app Fichiers → glisser le clip vers le disque. La plus rapide pour plusieurs gigaoctets.
+- **AirDrop** vers un Mac.
+- **Partage réseau** (SMB via l'app Fichiers) vers un PC.
 
-Compter environ 3 h 30 pour 30 000 itérations sur un MacBook Air (témoignage août 2026) ; bien moins sur un Mac Studio. **OpenSplat** (compilation Metal) est l'alternative en ligne de commande : `opensplat ./scene -n 30000 -o salon.ply`.
+**Vérifiez que le fichier s'ouvre sur l'ordinateur avant de libérer de la place sur l'iPad.**
 
-**Mesh sur Mac :** COLMAP ne fait pas de reconstruction dense sans CUDA. Utilisez le mesh LiDAR de l'iPad (Scaniverse/KIRI), **Object Capture** pour un objet ou une zone (Reality Composer Pro › File › New › Object Capture Model, jusqu'à 2 000 images), ou **Metashape Standard** (179 $, essai 30 jours) pour un bâtiment.
-
-### 5.3 Variante PC Windows avec GPU (0 € à 30 $)
-
-1. **RealityScan 2.2** (Epic Games Launcher, gratuit sous 1 M$ de revenus ; NVIDIA CUDA ou AMD RDNA 3/4) : importez photos ou vidéo, Align, puis **mesh texturé** de toute taille (export OBJ/GLB/STL/USDZ/FBX/DAE/LAS) et **Export › Registration › COLMAP** (dossier standard, images non distordues, masques).
-2. Entraînez le splat depuis l'export COLMAP avec, au choix :
-   - **Brush** (gratuit, tout GPU) ;
-   - **LichtFeld Studio** (NVIDIA RTX 20+/GTX 16+ ; source gratuite à compiler, binaire Windows v0.5.x pour 30 $, ou ancien binaire v0.4.2 gratuit) : GUI, édition, export PLY/SOG/SPZ/HTML ;
-   - **OpenSplat** (binaire Windows 29 $, ou gratuit compilé) ;
-   - **Postshot Free** uniquement pour entraîner et regarder (pas d'export du splat, filigrane, non commercial).
-3. Nettoyage et publication dans SuperSplat.
-
-Ordres de grandeur communautaires : 30 min sur RTX 4090, 2-3 h sur RTX 3060 pour ≈ 1 M de gaussiennes ; ≈ 8 h pour 1 000 photos de drone sur RTX 3060.
-
-### 5.4 Variante sans GPU : cloud gratuit
-
-**Le plus simple : Splatware Free.** Créez un compte sur splatware.com, uploadez la vidéo (MP4/MOV, ≤ 0,5 Go, 3 vidéos par projet) ou jusqu'à 500 photos, lancez un entraînement **Lite** (≈ 8-12 min, ≤ 1,5 M gaussiennes), éditez, partagez par lien, exportez en PLY (3 exports par jour). Qualité inférieure aux modèles premium (Creator 19,95 €/mois après le 1er mois à 9,95 €, qui ajoute 3 entraînements « Cinematic/Ultra » et un mesh physique).
-
-**Le plus puissant : Kaggle (≈ 30 h GPU/semaine, 2 × T4) ou Google Colab (T4 non garanti, 12 h).**
+### 5.2 Extraire et trier les images
 
 ```bash
-# Dans un notebook (Kaggle : Settings › Accelerator › GPU T4 x2 ; téléphone vérifié)
-# 1) Uploader le dossier images/ (dataset Kaggle ou Google Drive)
-# 2) COLMAP (paquet apt souvent < 4.0 : sans global_mapper, utiliser mapper)
-apt-get install -y colmap ffmpeg
-colmap automatic_reconstructor --workspace_path /kaggle/working/scene \
-  --image_path /kaggle/input/scene/images --data_type video --quality medium
-# 3) OpenSplat (notebook Colab officiel lié dans le README) ou gsplat
-git clone https://github.com/WebODM/OpenSplat && cd OpenSplat && mkdir build && cd build \
-  && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j$(nproc)
-./opensplat /kaggle/working/scene -n 30000 -d 2 -o /kaggle/working/scene.ply
+ffmpeg -i zone01.mov -vf fps=3 -qscale:v 1 -qmin 1 zone01/images/%05d.jpg
 ```
 
-Réduisez les images (facteur 2 à 4, ≈ 1 600 px) et limitez-vous à 100-300 photos sur un T4 16 Go ; sauvegardez le PLY dès qu'il est produit (coupures de session). Le notebook Colab officiel de Nerfstudio est cassé depuis fin 2025 (Python 3.12) : ne perdez pas de temps dessus.
+Puis **éliminez les images floues** avec Sharp Frames (gratuit, navigateur ou Python). **150 à 300 images nettes valent mieux que 1000 redondantes**, et réduisent fortement le temps de calcul.
 
-### 5.5 Variante « poses ARKit » avec Nerfstudio (iPad Pro, PC NVIDIA)
+> ### Place disque et temps : à quoi s'attendre avant de lancer
+> Ordres de grandeur pour **une zone** de la taille d'une pièce (estimations, sauf mention contraire) :
+>
+> | Élément | Place disque |
+> |---|---|
+> | Vidéo 4K30 H.265 de 2 min | ≈ 0,7 à 1,5 Go |
+> | 250–300 JPEG extraits en qualité 1 | ≈ 1,5 à 3 Go |
+> | `undistorted/` (COLMAP recopie les images) | ≈ autant que les JPEG |
+> | Base COLMAP + `sparse/` | quelques centaines de Mo |
+> | PLY de splat en sortie | **64 à 632 Mo** (plage mesurée sur des splats Scaniverse) |
+> | **Total à prévoir, par zone** | **15 à 20 Go libres** |
+>
+> Côté **temps**, le seul repère publié et vérifiable : un salon entraîné avec Brush sur un MacBook Air a demandé **478 s de COLMAP puis 3 h 34 d'entraînement** pour 30 000 itérations. Sur un PC NVIDIA récent, comptez plutôt des dizaines de minutes. **Une pièce = une demi-journée de machine, pas dix minutes.**
+
+### 5.3 Poses caméra avec COLMAP 4.2
+
+Installation : `brew install colmap` (macOS Apple Silicon), `conda install -c conda-forge colmap` (Linux), ou zip précompilé Windows.
 
 ```bash
-pip install nerfstudio            # projet ralenti : dernière release v1.1.5, gsplat épinglé 1.4.0
-ns-process-data polycam --data raw_polycam.zip --output-dir data/salon   # ou record3d
-ns-train splatfacto --data data/salon
-ns-export gaussian-splat --load-config outputs/salon/splatfacto/<date>/config.yml --output-dir exports/salon
+DS=~/splat/zone01
+
+colmap feature_extractor \
+  --database_path $DS/database.db \
+  --image_path $DS/images \
+  --ImageReader.camera_model OPENCV \
+  --ImageReader.single_camera 1 \
+  --SiftExtraction.max_image_size 3200
+
+colmap sequential_matcher --database_path $DS/database.db
+
+# OBLIGATOIRE pour des frames extraites d'une vidéo (pas d'EXIF de focale)
+colmap view_graph_calibrator --database_path $DS/database.db
+
+colmap global_mapper \
+  --database_path $DS/database.db \
+  --image_path $DS/images \
+  --output_path $DS/sparse
+
+colmap model_analyzer --path $DS/sparse/0
+
+colmap image_undistorter \
+  --image_path $DS/images \
+  --input_path $DS/sparse/0 \
+  --output_path $DS/undistorted \
+  --output_type COLMAP --max_image_size 3200
 ```
 
-Le fichier `exports/salon/splat.ply` s'ouvre dans SuperSplat. Nerfstudio n'exporte **pas** de mesh depuis splatfacto ; entraînez `nerfacto` en parallèle et utilisez `ns-export poisson` si vous voulez un OBJ texturé.
+> **Pourquoi `view_graph_calibrator` n'est pas optionnel ici.** La documentation COLMAP est explicite : « *The global mapper depends on reasonably good focal length priors to perform well.* » Or les JPEG produits par `ffmpeg` à l'étape 5.2 **n'ont aucune métadonnée EXIF de focale**. Sans cette étape, l'alignement échoue ou se fragmente en plusieurs modèles — c'est le point de rupture le plus coûteux de tout le pipeline, puisqu'il survient après l'extraction et avant l'entraînement.
+> `view_graph_calibrator` « *estime les focales et autres paramètres intrinsèques à partir des relations géométriques par paires* ». **Il modifie la base de données en place** : travaillez sur une copie.
+> **Si vos images viennent d'un appareil photo avec EXIF complet, cette étape est facultative. Si elles viennent de ffmpeg, elle est obligatoire.**
 
----
+Le `global_mapper` est GLOMAP, intégré à COLMAP depuis la 4.0.0 (mars 2026). Vous devez obtenir **un seul** dossier `sparse/0` et près de 100 % d'images enregistrées. Sinon : essayez le `mapper` incrémental, ou **hloc** (SuperPoint + LightGlue) sur les scènes peu texturées.
 
-## 6. Option « je paie un peu » : quand ça vaut le coup
+> ### Raccourci : sauter COLMAP entièrement
+> Deux apps enregistrent la vidéo **avec les poses caméra déjà calculées**, ce qui supprime l'étape la plus lente et la plus fragile du pipeline.
+>
+> **Spectacular Rec** — gratuit, iPadOS 17+, **LiDAR non requis**. Sur PC, `sai-cli process --key_frame_distance 0.15 <capture> <sortie>` (0,15 m = réglage documenté pour une **pièce** ; 0,05 m pour une scène de la taille d'une table) produit directement un dataset Nerfstudio, prêt pour Brush, gsplat ou OpenSplat.
+> **Limites** : SDK « *free for non-commercial use* » ; **roues Python disponibles uniquement pour Windows x86-64 et Linux x86-64 — pas de macOS** ; échelles documentées « table-sized » et « room-sized » seulement ; **app iOS figée depuis la v1.2.0 du 22 mars 2024** ; et **l'iPad figure dans la compatibilité App Store mais n'apparaît nulle part dans la documentation de l'éditeur, qui ne parle que d'iPhone : à tester avant de bâtir un pipeline dessus.**
+>
+> **Record3D** — son pendant payant (≈ **4–6 €**, achat unique), et la voie la mieux documentée. Il capture en RGBD avec les poses ARKit, que Nerfstudio ingère directement via `ns-process-data record3d --data <capture> --output-dir <sortie> [--ply-dir ...]`, **sans COLMAP**.
+> **Limite dure** : Record3D exige « *FaceID ou LiDAR* », **donc un iPad Pro** — les iPad Air, mini et standard n'ont ni l'un ni l'autre et sont exclus.
 
-| Dépense | Prix vérifié (09/2026) | Ça vaut le coup si… | Inutile si… |
+### 5.4 Entraîner le splat
+
+**Mac Apple Silicon — 3D Splat App** (gratuit, interface graphique, aucune ligne de commande) : importez le dossier COLMAP produit en 5.3, choisissez un preset (**Fast ≈ 2 min, Medium ≈ 5 min, HD ≈ 20 min**) ou réglez itérations / résolution / nombre max de splats à la main, puis exportez en PLY, PLY compressé, SPZ ou SOG. C'est le chemin le plus court pour un utilisateur Mac. **Elle ne produit aucun mesh.**
+
+**Mac / Windows / Linux, tout GPU — Brush** (Apache-2.0, aucun GPU NVIDIA requis).
+
+**Téléchargez le binaire correspondant à votre système sur la page Releases du dépôt** — dernière release **v0.3.0**, avec `brush-app-aarch64-apple-darwin.tar.xz` (Apple Silicon), `brush-app-x86_64-pc-windows-msvc.zip` (Windows x64) et `brush-app-x86_64-unknown-linux-gnu.tar.xz` (Linux x64). **Sur ce binaire, le drapeau s'appelle `--total-steps`.** Brush dispose d'une interface graphique : ajoutez `--with-viewer` à n'importe quelle commande pour l'ouvrir (« *Every CLI command can work with `--with-viewer` which also opens the UI, for easy debugging* »). Il fait aussi office de visionneuse de splats, y compris dans le navigateur (démo : `arthurbrussee.github.io/brush-demo`).
+
+*Variante avancée* — **ne compilez que si vous voulez la branche main 1.0.0**, dont le drapeau est `--total-train-iters`. Cela suppose d'installer `rustup` au préalable :
+
+```bash
+git clone https://github.com/ArthurBrussee/brush && cd brush
+cargo run --release -- --help          # IMPÉRATIF : les noms de flags ont changé
+cargo run --release -- ~/splat/zone01/undistorted \
+  --max-resolution 1920 --total-train-iters 30000 \
+  --sh-degree 3 --export-path ~/splat/zone01/out --with-viewer
+```
+
+> Binaire v0.3.0 → `--total-steps`. Branche main 1.0.0 → `--total-train-iters`. Vérifiez toujours avec `--help`.
+
+**PC NVIDIA — gsplat** (Apache-2.0) :
+
+```bash
+pip install gsplat
+git clone https://github.com/nerfstudio-project/gsplat && cd gsplat/examples
+pip install -r requirements.txt --no-build-isolation
+python simple_trainer.py default \
+  --data_dir ~/splat/zone01/undistorted --data_factor 1 \
+  --save_ply True \
+  --result_dir ~/splat/zone01/results
+```
+
+> ### ⚠ `--save_ply True` n'est pas optionnel
+> Dans le code source de `examples/simple_trainer.py` (branche `main`), le défaut est `save_ply: bool = False` — **sans ce drapeau, aucun fichier `.ply` n'est écrit**, seulement des checkpoints `.pt` aux `save_steps`. Vous iriez au bout des 30 000 itérations, c'est-à-dire plusieurs heures de GPU, pour ne rien pouvoir ouvrir dans SuperSplat.
+> Avec le drapeau, les PLY sont écrits aux itérations **7 000 et 30 000** (valeur par défaut de `ply_steps`), dans **`<result_dir>/ply/`**.
+
+**Troisième voie, tous GPU confondus — OpenSplat** (AGPLv3, donc **utilisable commercialement**, contrairement à 2DGS et SuGaR) : il tourne sur **NVIDIA (CUDA), AMD (ROCm/HIP), Apple Silicon (Metal) et même en CPU pur (~100× plus lent)**, lit nativement les projets **ODX, OpenSfM, COLMAP, OpenMVG et Nerfstudio**, et exporte en **`.ply`, `.splat`, `.spz` ou `.rad`** (option `-o`). Coût GPU annoncé : « *~2GB of GPU memory for each million gaussians* » — comptez donc plusieurs Go pour une pièce. La compilation est gratuite sur toutes les plateformes ; un **binaire Windows précompilé et signé est vendu 29,00 $ US** en paiement unique.
+
+**Sans GPU — trois options, de la plus gratuite à la plus rapide :**
+
+| Service | Gratuit ? | GPU | Bon pour |
 |---|---|---|---|
-| **KIRI Engine Pro** | 49,99 $/an (App Store, promos 35,99-47,99 $) ; 79,99 $/an ou 17,99 $/mois sur le site | Vous voulez **splat + mesh dérivé du splat** d'une même vidéo (≤ 3 min, 1080p) **sans ordinateur** et sans LiDAR, avec plugin Blender gratuit | Vous avez un Mac ou un PC GPU (les outils gratuits font mieux) ; la file d'attente cloud (parfois > 1 h) vous gêne |
-| **Scaniverse Plus** | 20 $/mois ou 200 $/an (40 000 crédits ≈ 22 min de capture cloud/mois) | Vous devez **fusionner plusieurs scans** d'un bâtiment en un seul « Site », ou traiter une vidéo 360° (Insta360 X4/X5) ; export USDZ | Une pièce à la fois vous suffit (le mode Classic gratuit fait le travail) |
-| **Scaniverse Pro** | 50 $/mois ou 500 $/an | Usage **commercial** explicite, 360° jusqu'à 10 min | Usage personnel |
-| **Polycam Basic** | 150 $/an (12,50 $/mois) ou 30 $/mois | Vous tenez à l'écosystème Polycam (plans 2D/3D, splats cloud jusqu'à 300 images, exports mesh 6 formats) | Vous voulez le PLY du splat : il semble réservé à **Business (400 $/an)** ; KIRI Pro est 3 fois moins cher pour du splat cloud |
-| **Postshot Indie** | 17 €/mois (204 €/an) ou 26 €/mois | PC Windows NVIDIA et vous préférez une GUI léchée avec export PLY/SPZ et plugin Unreal | Vous acceptez LichtFeld Studio (30 $ une fois) ou Brush (gratuit) |
-| **OpenSplat Windows** / **LichtFeld portail** | 29 $ / 30 $ (une fois) | PC Windows, vous ne voulez pas compiler | Vous savez compiler (gratuit) |
-| **Teleport Professional** | à partir de 30 $ prépayés, facturé au nombre d'images | Grand extérieur, quartier, drone, jusqu'à 100 M de splats, sans matériel | Scènes de la taille d'une pièce |
-| **Splatware Creator** | 9,95 € le 1er mois puis 19,95 €/mois | 3 entraînements premium/mois + mesh physique, sans ordinateur | Le modèle Lite gratuit vous suffit |
-| **Metashape Standard** | 179 $ (perpétuel) | Mesh photogrammétrique robuste **sur Mac** à l'échelle d'un bâtiment, export caméras COLMAP | Vous avez un PC Windows (RealityScan gratuit) |
-| **Spatial Fields** | 29,99 € (une fois) | Vous voulez poser vos splats en **AR** dans la pièce, sur iPad et Vision Pro | Le viewer web Scaniverse / superspl.at vous suffit |
-| **Record3D** | 4,99-5,99 € (une fois) | Pipeline Nerfstudio avec poses LiDAR sans COLMAP | SplatKing (gratuit) couvre déjà le besoin |
-| RadianceKit (Mac, 7,99 $) / SplatScene (Mac, 4,99 $/mois) | non revérifiés | Entraînement Metal « un clic » sur Mac, RadianceKit exige macOS 26 | 3D Splat App est gratuit |
+| **Kaggle** | **Oui**, ≈ 30 h/semaine, sessions 12 h | T4 ×2 (16 Go chacun) | Le premier essai. **Vérification SMS obligatoire** |
+| **Lightning AI** | **Oui**, 15 crédits/mois (≈ 80 h GPU en interruptible), 1 Studio toujours actif avec cycle de 4 h | T4 0,19 $/h, L4 0,48 $/h | Environnement persistant type VS Code ; **prévoyez des checkpoints** à cause du cycle de 4 h |
+| **RunPod** | Non (prépayé, ≈ 5 $ de bonus de parrainage) | RTX 4090 0,34 $/h | Le plus simple à coût quasi identique à Vast.ai sur 4090 |
+| **Vast.ai** | Non (dépôt minimum 5 $) | RTX 4090 ≈ 0,33 $/h **on-demand** | **Son seul vrai avantage est l'A100 80 Go** (≈ 0,67–0,74 $/h contre 1,19–1,39 $/h chez RunPod) — utile précisément pour les **grandes scènes** que ce rapport recommande de découper |
 
-À ne pas acheter en 2026 : abonnement 3D Scanner App (l'app a changé de mains et de modèle), Polycam pour les splats, Luma.
+> **Sur Vast.ai, méfiez-vous du prix « spot ».** Les 0,16 $/h souvent cités ne valent que pour les instances **interruptibles**, qui peuvent être reprises en cours d'entraînement. Sur un entraînement 3DGS de plusieurs heures sans reprise automatique, l'économie ne vaut pas le risque.
+>
+> **Règle d'or : ne faites jamais tourner COLMAP sur Kaggle** (4 cœurs CPU). Faites-le en local et n'envoyez que le dossier `undistorted`.
+
+### 5.5 Mesh depuis le même jeu de photos
+
+- **Mac, sans ligne de commande — Apple Object Capture.** C'est la **seule voie native, gratuite et sans terminal** pour obtenir un maillage texturé sur Mac à partir de photos prises avec n'importe quel iPad, LiDAR ou non. Deux frontends :
+  - **Reality Composer Pro**, livré gratuitement avec **Xcode** : *File → New → Object Capture Model*.
+  - **PhotoCatch** (Mac, gratuit avec des restrictions non documentées), qui accepte aussi une vidéo directement.
+
+  **Méthode** : photos prises librement avec **≥ 70 % de recouvrement**, puis reconstruction **100 % locale**, export **USDZ/OBJ**. Les niveaux de détail *medium / full / raw* et les textures 16K sont **réservés au Mac** (iOS ne fait que *reduced*).
+  **Limites à connaître avant de s'engager** : conçu pour objets et zones — Apple prévient qu'« *areas larger than 6 feet may have reduced mesh and texture quality unless processed at a higher detail level on Mac* », soit environ **1,80 m** ; plafond d'environ **2 000 images** (« *on Mac models with lots of unified memory you can process up to 2000 images* ») ; et **pas d'échelle réelle** si les photos ne viennent pas d'un appareil LiDAR.
+
+- **PC Windows/Linux — RealityScan 2.2** : même alignement, mesh texturé, exports OBJ/FBX/GLB/USDZ/LAS. Meilleure qualité gratuite sous le seuil de 1 M$ de revenus. **Pas de version macOS.**
+
+- **PC Windows/Linux, alternative libre à RealityScan — Meshroom** (AliceVision, **MPL2, gratuit, interface graphique nodale**) : photogrammétrie complète produisant un **maillage texturé** et des **nuages de points densifiés**, sans compte ni cloud. C'est la seule option gratuite à interface graphique si RealityScan est écarté — par exemple **au-delà du seuil de 1 M$ de revenus**.
+  **Deux réserves vérifiées** : (1) **sans GPU NVIDIA compatible CUDA**, on se limite au **« Draft Meshing »**, qui maille le seul nuage épars et donne un **aperçu grossier inexploitable** comme scan ; (2) **il n'existe aucun build macOS officiel**.
+
+- **PC NVIDIA, tout COLMAP** : `patch_match_stereo` → `stereo_fusion` → `poisson_mesher`. **Impossible sur Mac** (CUDA requis).
+
+- **Mac ou PC sans GPU, extérieur** : **ODM** via Docker → nuage LAZ géoréférencé, mesh OBJ texturé, orthophoto GeoTIFF, DSM/DTM.
+
+- **Partout, depuis le splat** : **3DGS-to-PC** (Apache-2.0), qui échantillonne un nuage **dense** puis maille par Poisson, avec un renderer Python ne nécessitant aucun CUDA.
+
+> ### ⚠ Un mesh de scan brut n'est utilisable nulle part en l'état
+> Quelle que soit la voie ci-dessus, la sortie est bruitée, trouée, et bien trop lourde pour un moteur de jeu, un simulateur ou de la CAO. **Prévoyez systématiquement une passe de nettoyage** — c'est une étape du pipeline, pas une finition optionnelle :
+>
+> - **MeshLab** (gratuit, GPL, Windows/macOS/Linux) pour le maillage : *Filters → Remeshing → **Simplification: Quadric Edge Collapse Decimation***, et sa variante **« (with texture) »** qui préserve les UV ; **Close Holes** pour les trous ; **Screened Poisson** pour refermer une surface. Attention sur une scène ouverte (extérieur, piste) : Poisson extrapole et crée des « bulles » — rognez ensuite par le champ scalaire de densité.
+> - **CloudCompare** (gratuit, GPL) pour les nuages : filtre **SOR** (points aberrants), sous-échantillonnage, recalage **ICP** entre zones, **Cross Section** pour extraire des tranches, **Rasterize** pour produire une heightmap ou un DEM.
+> - **Blender**, modificateur **Decimate** (mode *Collapse* ratio 0,1–0,3, ou *Planar* pour murs et sols) quand la cible est un moteur de jeu ou Gazebo (§9).
+>
+> **Ni MeshLab ni CloudCompare ne comprennent un splat**, seulement les maillages et les nuages — voir le piège des normales nulles au §8.
+
+### 5.6 Contrôle qualité chiffré
+
+Réservez une image sur 8 pour l'évaluation et lisez le **PSNR** rapporté par Brush ou gsplat. Repère publié et vérifiable : un salon entraîné avec Brush sur MacBook Air atteint **26,87 dB** après 3 h 34 (COLMAP : 478 s). *(Les valeurs souvent citées de 25,2 dB pour Scaniverse et 28 dB pour les implémentations de référence ne sont pas sourcées — à ne pas prendre pour argent comptant.)* Second repère : un PLY exporté **< 1 Mo** signale une capture ratée ; 20–50 Mo est correct.
 
 ---
 
-## 7. Checklist de capture d'un environnement
+## 6. Option « je paie un peu » : quand ça vaut le coup, et quand non
 
-**Avant**
-- [ ] Batterie > 80 %, 10-15 Go libres, lentille propre, mode avion si le scan est local.
-- [ ] Lumière constante et diffuse : tous les plafonniers allumés et stores fermés à l'intérieur ; ciel couvert ou soleil du même côté pendant toute la prise à l'extérieur ; pas de vent fort.
-- [ ] Personnes, animaux, véhicules et objets mobiles hors champ.
-- [ ] Repères texturés temporaires sur les murs unis ; référence d'échelle (mètre ruban, feuille A4) visible si vous n'avez pas de LiDAR.
-- [ ] Parcours planifié et reconnaissance à pied sans filmer.
+### Ce qui vaut le coup
 
-**Pendant**
-- [ ] **Translation, pas rotation** : « capturer avec les pieds, pas avec les bras ». Un panorama sur place fait échouer COLMAP et ARKit.
-- [ ] Lentement (5-10 cm/s), mouvement continu, pas de à-coups ; pause avant et après chaque porte.
-- [ ] Périmètre puis centre ; 3 passes (niveau / vers le haut / vers le bas) ; 2 à 5 boucles à hauteurs différentes pour un objet ou un point d'intérêt (orbiter en visant vers l'intérieur).
-- [ ] Chaque surface vue depuis ≥ 3 positions ; recouvrement 70-80 % entre images vidéo (30-50 % entre photos).
-- [ ] Distance 0,5 à 3 m des surfaces ; ≥ 30 cm de tout obstacle ; garder les éléments déjà capturés dans le cadre.
-- [ ] Exposition / focus / balance des blancs verrouillés ; 4K 30 fps ; tout net (pas de bokeh, pas de flou de bougé : obturateur court, ISO plutôt que flou).
-- [ ] Éviter vitres, miroirs, surfaces brillantes, plafonds blancs uniformes ; ne pas rester immobile dans un reflet.
-- [ ] Scaniverse : 1-3 min par scan, jamais plus de 5 min ni 500 m² ; démarrer sur une zone détaillée.
+| Dépense | Prix (devise, relevé) | Condition | Ce que ça lève |
+|---|---|---|---|
+| **RadianceKit** | **7,99 $ US**, achat intégré **unique** (App Store US, 2026-09-20) | macOS **26.0+**, Mac **M1+** | Les 3 murs : durée de scan, absence de fusion, absence de données brutes. Vidéo sans limite, entraînement Metal local, export PLY/SPZ/SOG/glTF. **Mais comparez d'abord avec 3D Splat App, gratuite** |
+| **Scaniverse Plus, 1 mois** | **20 $/mois, ou 200 $/an en annuel** (page tarifs, 2026-09-19) | Projet ponctuel | 40 000 crédits/mois (≈ 22 min de capture) + splats depuis vidéo 360° + export USDZ. **Vérifiez d'abord avec le quota Free si la fusion multi-scans vous est bien ouverte** (voir encadré ci-dessous) |
+| **LichtFeld Studio, binaire** | 30 $ US, paiement unique | PC NVIDIA CC 7.5+ | Interface complète ; **gratuit si vous compilez** |
+| **OpenSplat, binaire Windows** | **29,00 $ US**, paiement unique | Windows, pour éviter la compilation | Gain de temps seulement — **le code est gratuit sur toutes les plateformes** |
+| **KIRI Engine Pro** | 17,99 $/mois ou **79,99 $/an** | **Ni** Mac Apple Silicon **ni** PC NVIDIA | Splat + « 3DGS to Mesh » sans ordinateur |
+| **Record3D** | ≈ **4–6 €**, achat unique | iPad **Pro** (LiDAR), pipeline Nerfstudio | Supprime COLMAP : poses ARKit ingérées par `ns-process-data record3d` |
+| **RunPod RTX 4090** | 0,34 $/h (Community, 2026-09-13) | Aucun GPU local | ≈ 0,35 à 1 $ par scène |
+| **Vast.ai A100 80 Go** | ≈ 0,67–0,74 $/h | **Grandes scènes uniquement** | ≈ 40 % moins cher que RunPod sur cette carte précise |
 
-**Après**
-- [ ] Inspecter murs blancs, portes, miroirs, plafond avant de quitter les lieux ; refaire les passes manquantes.
-- [ ] Une capture par pièce ; extérieur séparé de l'intérieur ; découper un site dès que la lumière change ou que le parcours devient difficile à recouvrir.
-- [ ] Grand extérieur (circuit, terrain, façade) : vidéo/photos au sol le long du tracé **plus** passes drone obliques (80 % recouvrement frontal, 70 % latéral, GSD ≤ 3 cm, jamais uniquement du nadir) ; la fusion sol + aérien reste imparfaite dans les outils grand public, privilégiez la capture au sol pour les vues « pilote ».
+**Équivalents 0 €** pour chaque ligne :
+- **3D Splat App** (Laan Labs, Mac App Store, **gratuite, aucun achat intégré**, M1+ / macOS 15.6+, interface graphique, presets Fast/Medium/HD, export PLY/SPZ/SOG) remplace **RadianceKit**. **Elle ne produit aucun mesh.**
+- **Brush** (Apache-2.0, Mac/Windows/Linux, AMD/Nvidia/Intel, binaires précompilés, interface via `--with-viewer`) remplace RadianceKit et Postshot — et couvre en plus les PC AMD/Intel, ce que 3D Splat App ne fait pas.
+- **Reality Composer Pro** (gratuit avec Xcode) ou **PhotoCatch** remplacent une app de scan payante pour le mesh sur Mac.
+- **Meshroom** remplace RealityScan sur PC si vous dépassez le seuil de 1 M$ de revenus.
+- **OpenSplat compilé** et **LichtFeld compilé** remplacent leurs binaires payants.
+- **Kaggle** ou **Lightning AI** remplacent RunPod.
+- **Spectacular Rec** (gratuit, non commercial) remplace Record3D — mais sans LiDAR et avec la réserve iPad du §5.3.
+- **CorbeauSplat** (freddewitt/CorbeauSplat, MIT, macOS Apple Silicon, orchestre COLMAP + Brush + SuperSplat + splat-transform) existe bel et bien — *vérifié le 2026-09-20 — mais sans retour d'usage indépendant : à tester avant d'en dépendre.*
 
-Limites pratiques d'une capture mobile (source tierce, mars 2026) : 50-200 m² en intérieur, 200-500 m² en extérieur par capture ; précision dimensionnelle 2 à 5 % à l'échelle d'un bâtiment ; LiDAR Apple fiable jusqu'à ≈ 5 m, dérive de plusieurs cm sur une pièce de 9 m si l'on scanne trop longtemps.
+> **Avant de payer Plus pour un grand site, lisez ceci.**
+> **Point 1 — les plafonds par scan ne s'achètent pas.** Le cloud Scaniverse impose des limites **par scan**, indépendantes du plan : « *Each scan supports up to five minutes of recording time and can cover up to 500 square meters.* » Payer ne vous dispense pas de découper — cela vous donne seulement plus de crédits pour traiter les morceaux.
+> **Point 2 — le palier de la fusion multi-scans n'est pas établi.** Le cloud Scaniverse sait fusionner plusieurs scans dans un **Site**, mais la page tarifs mentionne « *combining multiple scans into one asset* » uniquement dans son texte de présentation, **sans rattacher la fonction à aucun palier** — ni Free, ni Plus, ni Pro — tandis que des sources secondaires l'attribuent à Plus/Pro. **Testez la fusion sur deux scans courts avec vos 20 000 crédits Free, et n'achetez Plus qu'après confirmation.**
+
+### Ce qui ne vaut pas le coup
+
+| À ne pas payer | Prix | Pourquoi |
+|---|---|---|
+| **Postshot Indie** | 204 €/an | Même service que 3D Splat App (gratuite) ou Brush (gratuit) ; Windows + NVIDIA obligatoires ; le plan gratuit n'exporte **ni PLY ni SPZ** |
+| **Polycam Basic** | 150 $/an | **Ne sort pas le PLY du splat** — classé Business (400 $/an) par le Help Center du 16/09/2026 |
+| **Scaniverse Plus** | **20 $/mois, ou 200 $/an en annuel** | Plafonné à ≈ **22 min de capture cloud par mois** (40 000 crédits à 30 crédits/s), et les limites de 5 min / 500 m² par scan restent. Ne le prenez qu'après avoir épuisé le Free |
+| **Polycam, essai 7 jours** | — | Bascule automatique en abonnement annuel ; dizaines d'avis 2026 |
+| **Teleport by Varjo** | **à partir de 30 $ prépayés, puis facturation au nombre d'images (prix unitaire non public)** | Aucun mesh, aucun plan gratuit durable |
+
+> **Droits commerciaux** : le mode Classic gratuit de Scaniverse n'en ouvre **aucun**. La page tarifs est explicite : « *For commercial rights, including resale, you must be on a Pro plan or Enterprise contract* » (50 $/mois ou 500 $/an). **2DGS et SuGaR** sont sous licence Inria non commerciale, et **Spectacular Rec** sous SDK non commercial. À l'inverse, la chaîne **COLMAP (BSD) + Brush/gsplat (Apache-2.0) + OpenSplat (AGPLv3) + Meshroom (MPL2) + SuperSplat (MIT)** est libre de tout usage, y compris commercial — c'est la colonne « Droits commerciaux » du tableau §3.
+
+---
+
+## 7. Bonnes pratiques de capture — checklist
+
+☐ **Translater, jamais pivoter sur place.** Postshot est catégorique : « *Always move the camera* », sans panoramique ni rotation sans déplacement, la reconstruction reposant sur la triangulation depuis des positions différentes. Confirmé par le papier LighthouseGS : « *panorama-style motion usually fails to correctly perform COLMAP* ».
+☐ **Trois passes par zone** : hauteur des yeux, vers le plafond, vers le sol.
+☐ **Recouvrement** : **30 à 50 %** entre photos selon Postshot, 70 à 80 % entre frames vidéo ; chaque surface vue dans **au moins 3 images**. Pour Apple Object Capture, visez **≥ 70 %**.
+☐ **1 à 3 minutes maximum par scan Scaniverse** ; l'app avertit à 180 s.
+☐ **Obturateur court, ouverture fermée, ISO élevé plutôt que pose longue** — « *Prefer short exposure times and small apertures* », et « *radiance fields tend to tolerate noise better than blur* ».
+☐ **Démarrer sur une zone texturée**, jamais un mur nu. Collez des post-it sur les grands aplats si nécessaire.
+☐ **Lumière homogène et constante.** Stores fermés côté fenêtre. Ciel couvert en extérieur.
+☐ **Recouvrement réel entre zones** : pause avant et après chaque porte, traversée lente. **Sans recouvrement filmé, aucun alignement n'est récupérable.**
+☐ **Mètre pliant ouvert à 1,00 m posé dans le champ, dans tous les cas** — l'échelle du splat n'est garantie nulle part.
+☐ **Ne pas déranger** activé, batterie > 80 %, 10–15 Go libres.
+☐ **Régler `Save Clips to → Files` dans Blackmagic Camera AVANT de filmer** (§5.1 bis), sinon vos rushes resteront introuvables dans l'app Fichiers.
+☐ **Renoncer d'avance** aux miroirs, vitres, eau, carrosseries, grillages fins et personnes en mouvement.
+☐ **Exporter le jour même**, en SPZ **et** PLY, et ranger selon l'arborescence du §4 étape 6 bis — et **télécharger vos résultats KIRI sans tarder : une rétention de 3 jours est documentée côté API, appliquez-la par prudence à l'app.**
+☐ **Extérieur** : boucle de périmètre puis quadrillage, en gardant des repères fixes et texturés dans le cadre (la doc officielle reconnaît la « Large outdoor drift » en zone ouverte).
 
 ---
 
 ## 8. Visualiser, partager, éditer, convertir
 
-**Voir un splat sur l'iPad**
-- Dans Scaniverse (natif, y compris en AR) ; dans Safari via superspl.at, Reflct (15 scènes gratuites, non revérifié) ou un viewer HTML exporté par SuperSplat ; en AR native avec Spatial Fields (payant).
-- Les apps natives iPad exploitant l'API RealityKit 27 devraient se multiplier avec iPadOS 27.
+**Formats.** PLY = maître, universel, lourd (64–632 Mo). **SPZ** = format ouvert MIT de Niantic, ≈ 10× plus léger, lu par SuperSplat, Postshot, Babylon.js, Adobe, Blender 5.3. **SOG** = 15 à 20× plus léger que le PLY, format de diffusion web. **.splat / .ksplat** = viewers historiques.
 
-**Formats et conversion**
-- PLY = source de référence (lourd). SPZ 4 (ouvert, Niantic, mai 2026) ≈ 10× plus petit ; SOG (PlayCanvas) 15-20× plus petit, avec streaming LOD sur superspl.at.
-- Convertir : SuperSplat (Convert, dans le navigateur) ou `splat-transform` (CLI). SPZ ↔ PLY : convertisseur web de Niantic Spatial.
-- Nettoyer un splat mobile réduit souvent la taille de manière spectaculaire (retours utilisateurs : jusqu'à ≈ 90 %, puis encore ≈ 90 % en ne gardant qu'une bande d'harmoniques sphériques — non vérifié précisément).
+**Conversion et assemblage — splat-transform** (MIT, `npm install -g @playcanvas/splat-transform` — **nécessite Node.js LTS**, voir l'encadré d'installation du §5). Options vérifiées le 2026-09-20 : `-t/--translate`, `-r/--rotate`, `-s/--scale`, `-H/--filter-harmonics <0|1|2|3>`, `-N/--filter-nan`, `-B/--filter-box`, `-d/--decimate`, `-F/--filter-floaters`, `-C/--filter-cluster`. Fusion de plusieurs zones — **les valeurs `-r` et `-t` sont celles que vous avez relevées dans le panneau Transform de SuperSplat à l'étape 9 du §4** :
 
-**Moteurs 3D**
-- Blender : add-on gratuit **3DGS Render by KIRI Engine** ; import natif PLY/SPZ annoncé pour Blender 5.3 (novembre 2026, non revérifié).
-- Unity : **gsplat-unity** (maintenu) plutôt que UnityGaussianSplatting (figé).
-- Unreal : plugin **XGRIDS LCC-3DGS** (gratuit, UE 5.1-5.8) ou plugin Postshot (.psht) ; le plugin Luma est abandonné.
-- Web : Spark 2.0 (three.js) ou SuperSplat Viewer/Studio ; Cesium 3D Tiles pour les scènes géoréférencées.
+```bash
+splat-transform zone01.ply \
+  zone02.ply -r 0,90,0 -t 4.2,0,-1.1 \
+  zone03.ply -t 9.6,0,-1.4 \
+  maison.sog
+```
 
-**Splat → mesh (et inverse)**
-- Le plus simple : **KIRI Engine Pro** (« 3DGS to Mesh 3.0 », option à cocher avant l'upload) ; **Scaniverse cloud** produit depuis juillet 2026 un USDZ **splat + mesh aligné** (captures 360°, plans payants).
-- Gratuit mais technique (GPU NVIDIA, ré-entraînement depuis les photos + poses) : **2DGS**, **SuGaR**, PGSR, GOF, MILo (non revérifiés).
-- Sans GPU, grossier : exporter les centres des gaussiennes en CSV/PLY (splat-transform), calculer les normales puis Poisson dans **CloudCompare** ou **MeshLab** ; suffisant pour une collision ou une heightmap, pas pour un rendu.
-- Mesh → splat : LichtFeld Studio (mesh-to-splat) et Splatware (« mesh only by conversion »).
+**Splat → mesh.** Trois voies gratuites :
+
+1. **3DGS-to-PC** (Apache-2.0) — nuage dense puis Poisson via Open3D, renderer Python sans CUDA. **Voie recommandée.**
+2. **splat-transform**, collision voxelisée. **Le fichier de sortie `.voxel.json` est un argument positionnel obligatoire** : sans lui, la commande ne produit rien.
+   ```bash
+   splat-transform piste.ply -C --seed-pos 0,0,0 \
+     --voxel-floor-fill --collision-mesh smooth piste.voxel.json
+   ```
+   La sortie est double : `piste.voxel.json` (métadonnées) + `piste.voxel.bin` (octree binaire), **et le maillage de collision est écrit à côté, en `piste.collision.glb`**. `--collision-mesh` accepte une valeur optionnelle `[smooth|faces]` (défaut : `smooth`). **Choisissez le bon remplissage** : `--voxel-floor-fill` remplit chaque colonne depuis le bas — c'est le mode des **scènes extérieures** ; `--voxel-external-fill` scelle les voxels extérieurs par inondation depuis la frontière — c'est le mode des **intérieurs**. Valeurs par défaut : `--voxel-size 0.05`, `--voxel-opacity 0.1`. **Ces valeurs sont en unités monde** : sans la mise à l'échelle de l'étape 7, le résultat est inexploitable.
+3. **2DGS / SuGaR** — meilleure fidélité géométrique, mais **licence Inria + MPII, recherche et évaluation uniquement, usage commercial interdit**. SuGaR est de plus gelé depuis septembre 2024.
+
+> **Piège à connaître absolument** : dans un PLY 3DGS, les champs `nx`, `ny`, `nz` valent **zéro**. Une reconstruction de Poisson lancée directement dans CloudCompare ou MeshLab rend un calque **vide**, silencieusement. Il faut supprimer puis recalculer les normales, ou utiliser 3DGS-to-PC.
+
+**Blender.** La 5.3 apporte l'import natif PLY/SPZ et le rendu 3DGS (Workbench, EEVEE, Cycles) — mais elle est **en alpha jusqu'au 30/09/2026**, sortie stable annoncée le 10/11/2026, **sans export**, avec des performances signalées comme non idéales. *(Un défaut d'« Apply Transform » sur l'échelle, la rotation et les harmoniques sphériques est **rapporté mais non vérifié** dans cette revue — testez avant de vous y fier.)* Pour travailler aujourd'hui : **Blender 5.2 LTS + add-on « 3DGS Render » de KIRI** (gratuit, GPL, PLY 3DGS uniquement). Pour la décimation d'un mesh de scan, le modificateur **Decimate** est pleinement valable dès la 5.2 LTS.
+
+**Unity.** `aras-p/UnityGaussianSplatting` (MIT) : menu *Tools → Gaussian Splats → Create GaussianSplatAsset*. Exige D3D12, Metal ou Vulkan — DirectX 11 ne fonctionne pas. *L'auteur indique ne plus prévoir de développements significatifs : projet vivant par sa communauté.*
+
+**Unreal.** `xverse-engine/XScene-UEPlugin` (Apache 2.0, rendu Niagara). *Le dépôt annonce « Unreal Engine 5.0+ » et ses notes citent UE 5.2 à 5.4 — vérifiez la compatibilité avec votre version avant de vous engager.* Le plugin Luma AI est de facto abandonné.
+
+**Web.** **Spark** (World Labs, MIT, three.js) avec son CLI `build-lod` et le format streamable `.RAD` : des scènes de 73 à 106 millions de splats sont rendues en temps réel, y compris sur mobile.
+
+**Sur iPad.** Safari suffit pour un lien superspl.at. Sinon **MetalSplatter**, app App Store gratuite et open source (PLY, SPZ, .splat). *Évitez Spatial Fields à 24,99 $ : des avis signalent des plantages précisément sur les splats de 500 Mo — votre cas d'usage.*
 
 ---
 
 ## 9. Aller plus loin : intégrer l'environnement scanné dans ROS / Gazebo / RViz
 
-Ce dépôt affiche des circuits sous forme de `visualization_msgs/Marker` de type `LINE_STRIP` (type 4) publiés par `rostopic pub` dans un fichier `launch/race-track-XXXXXXXX.launch`, avec un script `scripts/racetrack_arg_converter.py` qui transforme un CSV (X,Y) en arguments `pN`. Trois façons d'y brancher un scan iPad :
+*Section pertinente uniquement si votre projet est bien la collection de circuits virtuels ROS de ce dépôt.*
 
-### 9.1 Afficher le maillage scanné dans RViz (marker MESH_RESOURCE)
+> ### ⚠ Ce dépôt est un paquet **catkin ROS 1**, pas ROS 2
+> Vérifié dans les fichiers : `package.xml` au format 2, `config/racetrack.rviz` avec des classes `rviz/*`, fichiers de lancement en XML, topic `/shape`, Fixed Frame `/map`, namespace `MWS`, markers `type: 4` et `id: 0`, règles `install()` commentées dans le `CMakeLists.txt`.
+> **Aucune commande ROS 2 ne s'applique telle quelle ici.** Le tableau ci-dessous sépare explicitement les deux mondes. ROS 1 Noetic est par ailleurs en fin de support depuis mai 2025 : si vous démarrez un nouveau projet, la colonne de droite est la bonne.
 
-1. Dans Blender (gratuit) : importer l'OBJ/GLB/USDZ exporté par Scaniverse/KIRI ; unités en **mètres**, **+Z vers le haut**, **+X vers l'avant** (les scans Apple sont en Y-up : rotation de 90° autour de X) ; centrer à l'origine ; modificateur **Decimate** (Collapse, ratio 0,1-0,3 ; Planar pour les murs et sols) ; exporter en **DAE (Collada)** avec la texture PNG à côté, ou en GLB.
-2. Placer le fichier dans un dossier `meshes/` du paquet et publier un marker de type **10** :
+| Besoin | **ROS 1 Noetic (ce dépôt)** | **ROS 2 / Gazebo moderne (si migration)** |
+|---|---|---|
+| Sauver une carte 2D | `rosrun map_server map_saver -f ma_carte` → `ma_carte.pgm` + `ma_carte.yaml` | `ros2 run nav2_map_server map_saver_cli` |
+| Nuage → grille d'occupation | `octomap_server` (OctoMap 3D incrémentale ; publie une projection 2D sur le topic `projected_map`, en `nav_msgs/OccupancyGrid`), puis `map_saver` | `pcd2pgm`, ou Nav2 + `map_saver_cli` |
+| Simulateur | **Gazebo Classic 11** | Gazebo Harmonic |
+| Chemin des modèles | **`GAZEBO_MODEL_PATH`** (chemins séparés par `:`), avec `<include><uri>model://…</uri></include>` | `GZ_SIM_RESOURCE_PATH` |
+| Version SDF | **1.6 / 1.7** | 1.11 |
+| Visualiseur | RViz (ROS 1) | RViz2 |
+
+**Afficher un mesh scanné dans RViz (ROS 1).** Placez `piste.dae` **et ses textures** dans un dossier `meshes/`.
+
+> ### ⚠ Ne partez pas d'un fichier launch vide
+> **Dupliquez un fichier de lancement existant** (par exemple `launch/race-track-26NKzM0j.launch`). Vérifié dans le dépôt : ces fichiers déclarent déjà en tête les arguments `h`, `orientation`, `scale`, `color`, `position`, `pose` et `lt`. L'extrait ci-dessous **les utilise sans les redéclarer** : collé dans un fichier vierge, il produit une erreur `roslaunch`.
+> **Procédure** : dupliquez le fichier, remplacez le bloc de coordonnées entre les commentaires `start/end of race track coordinates`, remplacez le nœud `pub1`, puis ajoutez les lignes suivantes — en gardant `ns: 'MWS'` mais avec un `id` différent de 0 :
 
 ```xml
-<arg name="mesh" value="'{header: {frame_id: map}, ns: scan, id: 1, type: 10, action: 0,
-  pose: {position: {x: 0.0, y: 0.0, z: 0.0}, orientation: {w: 1.0, x: 0.0, y: 0.0, z: 0.0}},
-  scale: {x: 1.0, y: 1.0, z: 1.0}, color: {a: 1.0, r: 1.0, g: 1.0, b: 1.0},
-  mesh_resource: 'package://virtual_racetracks_collection/meshes/piste.dae',
-  mesh_use_embedded_materials: true}'" />
-<node name="pub_mesh" pkg="rostopic" type="rostopic" args="pub /shape visualization_msgs/Marker $(arg mesh)"/>
+<arg name="mesh_uri" value="mesh_resource: package://virtual_racetracks_collection/meshes/piste.dae"/>
+<arg name="mesh_marker" value="'{$(arg h), ns: 'MWS', id: 1, type: 10, action: 0,
+     $(arg pose), scale: {x: 1.0, y: 1.0, z: 1.0}, $(arg color), $(arg lt),
+     $(arg mesh_uri), mesh_use_embedded_materials: true}'" />
+<node name="pub_mesh" pkg="rostopic" type="rostopic"
+      args="pub /shape visualization_msgs/Marker $(arg mesh_marker)"/>
 ```
 
-RViz (ROS 1 comme ROS 2) charge DAE/OBJ/STL via Assimp ; `scale 1 1 1` = 1 m. Les constantes de type sont identiques en ROS 2.
+`type: 10` est `MESH_RESOURCE`. `scale: 1 1 1` signifie taille native. RViz délègue le chargement des DAE/OBJ/STL à Assimp et résout les URI `package://`. *Note : toutes les règles `install()` du CMakeLists sont commentées, donc l'URI se résout depuis l'espace source.*
 
-### 9.2 Conserver le format actuel (ligne centrale extraite du scan)
+**Rester au format actuel du dépôt.** Extrayez la ligne centrale du scan avec **CloudCompare** (outil *Cross Section* : tranche horizontale puis extraction des contours, disponible depuis la 2.12), exportez en CSV, puis :
 
-1. Ouvrir le nuage de points (PLY/LAS) ou le mesh dans **CloudCompare** (gratuit) : outil **Cross Section** (≥ 2.12) pour extraire les contours ou une tranche, ou tracer une polyligne ; exporter en CSV (X,Y).
-2. Sous-échantillonner, puis `python3 scripts/racetrack_arg_converter.py piste.csv` génère les `<arg name="pN">` et la liste `pts` à coller dans un nouveau `race-track-XXXXXXXX.launch` (branche du même nom, conformément au CONTRIBUTING.md).
+```bash
+python3 scripts/racetrack_arg_converter.py piste.csv
+```
 
-### 9.3 Simuler dans Gazebo
+> ### Ce que fait réellement le script (vérifié dans le code)
+> - **Il n'affiche rien à l'écran** : il écrit sa sortie dans un fichier **`<nom>.txt` créé à côté du CSV** (`csv_file_name.replace(".csv", ".txt")`), et se contente d'afficher « *Copy the covertion result from …* ».
+> - **Il saute la première ligne** du CSV (`next(reader)`) : votre fichier doit avoir une ligne d'en-tête, sinon le premier point est perdu.
+> - **Il exige exactement deux colonnes.** La ligne `X, Y = map(float, row)` lève une exception dès qu'une ligne en contient trois ou plus — **ce qui est le cas par défaut d'un export CloudCompare** (X, Y, Z, et souvent des champs scalaires). **Supprimez les colonnes surnuméraires avant de lancer le script.**
+> - **Il force `z: 0.0`** : il ne convient qu'à un tracé sensiblement plan.
+>
+> Le contenu de `<nom>.txt` est à coller entre les commentaires `start/end of race track coordinates`.
 
-- **Modèle statique** : dossier `piste_scan/` avec `model.config`, `model.sdf`, `meshes/piste.dae`, `materials/textures/` ; dans le monde SDF : `<include><static>true</static><uri>model://piste_scan</uri></include>` ; variable `GZ_SIM_RESOURCE_PATH` pointant sur le dossier parent (Gazebo Harmonic, LTS jusqu'en 2029). GLB accepté nativement depuis Gazebo Garden ; DAE reste le format le plus éprouvé. Gazebo Classic est en fin de vie depuis janvier 2025.
-- **Collision automatique** (SDF 1.11) : réutiliser le même mesh avec `<mesh optimization="convex_decomposition">` dans `<collision>`, et `<scale>` pour corriger un export en cm/mm.
-- **Terrain** : CloudCompare › **Rasterize** le nuage LiDAR en image niveaux de gris carrée, redimensionnée à 256/512 px (Ogre2 / Harmonic exige 2^n ; Classic exigeait 2^n+1) → `<heightmap><uri>…png</uri><size>L l h</size></heightmap>` ; DEM GeoTIFF possible via GDAL.
-- **Carte 2D de navigation** : PLY → PCD (CloudCompare), puis `pcd2pgm` (ROS 2 Humble) ou `octomap_server`, sauvegarde avec `ros2 run nav2_map_server map_saver_cli -f piste` (YAML + PGM) ; carte d'élévation 2.5D avec `grid_map_pcl`.
+**Gazebo Classic 11** (le simulateur de ce dépôt). Modèle statique, visuel détaillé et collision décimée, en **SDF 1.6/1.7** :
 
-Formats bruts utiles côté ROS : LAS/E57 (Modelar, Scaniverse), PLY (tous), USDZ splat + mesh « prêt pour Isaac Sim » (Scaniverse cloud, payant).
+```xml
+<collision name="collision">
+  <geometry>
+    <mesh>
+      <uri>model://piste_scan/meshes/piste_collision.dae</uri>
+    </mesh>
+  </geometry>
+</collision>
+```
+
+Placez le dossier du modèle dans un répertoire listé par **`GAZEBO_MODEL_PATH`** (chemins séparés par `:` ; vérifiez avec `echo $GAZEBO_MODEL_PATH`), puis référencez-le par `<include><uri>model://piste_scan</uri></include>`.
+
+**Décimez impérativement le mesh avant** — voir l'encadré de nettoyage du §5.5 : modificateur **Decimate** de Blender (mode Collapse ratio 0,1–0,3, ou mode Planar pour murs et sols), ou *Quadric Edge Collapse Decimation* dans MeshLab. Un mesh de scan brut saturera la mémoire du moteur physique.
+
+*Si vous migrez vers Gazebo Harmonic, c'est là que `<mesh optimization="convex_decomposition">` et `GZ_SIM_RESOURCE_PATH` (SDF 1.11) deviennent pertinents — pas avant.*
+
+**Cartes de navigation (ROS 1).** PLY → PCD dans CloudCompare, puis `octomap_server` pour construire la grille et publier `projected_map`, enfin `rosrun map_server map_saver` → PGM + YAML. Terrain : CloudCompare *Rasterize* → PNG niveaux de gris **carré**, redimensionné en 2ⁿ+1 pour Gazebo Classic, puis `<heightmap>`.
+
+**Les deux idées transposables hors ROS** : la mise à l'échelle métrique (§4, étape 7) et la génération d'un mesh de collision directement depuis le splat (§8) — c'est la seule voie « géométrie » qui ne dépende ni du LiDAR ni d'un GPU.
 
 ---
 
 ## 10. Récapitulatif des coûts et matrice de décision
 
-### Coûts (au 19/09/2026)
+### Coûts (devise d'origine, relevé les 19–20 septembre 2026)
 
-| Poste | Gratuit | Le moins cher qui change quelque chose |
+| Poste | Gratuit | Payant |
 |---|---|---|
-| Capture + splat sur iPad | Scaniverse Classic (0 €) | KIRI Pro 49,99 $/an (splat + mesh cloud) ; Scaniverse Plus 20 $/mois (fusion, 360°) |
-| Mesh sur iPad | Scaniverse (0 €), KIRI Basic LiDAR (0 €), Modelar (0 €), RealityScan Mobile (0 €) | — |
-| Entraînement Mac | 3D Splat App, Brush, OpenSplat, COLMAP (0 €) | RadianceKit 7,99 $ (non revérifié) |
-| Entraînement PC | Brush, LichtFeld source, OpenSplat source, COLMAP (0 €) ; Postshot Free (sans export) | OpenSplat Windows 29 $ ; LichtFeld binaire 30 $ ; Postshot Indie 204 €/an |
-| Mesh sur ordinateur | RealityScan desktop (0 € < 1 M$), Object Capture Mac (0 €), Meshroom / WebODM (0 €, non revérifiés) | Metashape Standard 179 $ (Mac) |
-| Cloud | Splatware Lite (0 €), Kaggle (0 €), Colab (0 €) | Colab Pro 9,99 $/mois ; Splatware Creator 19,95 €/mois ; Teleport dès 30 $ |
-| Édition / partage | SuperSplat + superspl.at (0 €) | Spatial Fields 29,99 € (AR) |
-| Matériel | Votre iPad actuel | iPad Pro reconditionné M4 1 019 € ou d'occasion 2020-2022 pour le LiDAR |
+| Capture splat sur iPad | Scaniverse Classic — **0 €, illimité** | — |
+| Capture mesh sur iPad | Scaniverse LiDAR / Polycam Space non-LiDAR / **Modelar (iPad Pro, E57+LAS)** / KIRI Photo Scan (+ PLY/XYZ) / RealityScan Mobile — **0 €** | Polycam Basic 150 $/an (inutile ici) |
+| Vidéo à exposition verrouillée | Blackmagic Camera — **0 €** | — |
+| Capture avec poses (sans COLMAP) | **Spectacular Rec + sai-cli — 0 €** (non commercial, Win/Linux x86, réserve iPad) | **Record3D ≈ 4–6 €** (iPad Pro uniquement) |
+| Entraînement local Mac | **3D Splat App**, Brush, CorbeauSplat — **0 €** | RadianceKit **7,99 $ US une fois** |
+| Entraînement local PC/AMD/Intel | **Brush (binaire précompilé)**, **OpenSplat compilé** — **0 €** | OpenSplat binaire Windows 29 $ |
+| Entraînement local PC NVIDIA | gsplat, LichtFeld compilé — **0 €** | LichtFeld binaire 30 $ ; Postshot Indie 204 €/an |
+| GPU cloud | Kaggle ≈ 30 h/sem (**vérification SMS obligatoire**), **Lightning AI 15 crédits/mois ≈ 80 h interruptible**, Colab 12 h — **0 €** | RunPod 0,34 $/h ; **Vast.ai A100 80 Go ≈ 0,67–0,74 $/h** (grandes scènes) |
+| Poses caméra | COLMAP — **0 €** | — |
+| Mesh photogrammétrie | RealityScan < 1 M$, **Meshroom (MPL2)**, ODM, **Reality Composer Pro / PhotoCatch (Mac)** — **0 €** | Metashape Standard 179 $ |
+| Nettoyage et décimation du mesh | **MeshLab, CloudCompare, Blender — 0 €** | — |
+| Édition, conversion, hébergement | SuperSplat, splat-transform, superspl.at — **0 €** | — |
+| **Fusion multi-scans automatique** | **Cloud uniquement, palier non précisé par l'éditeur — à tester avec le quota Free** (20 000 crédits/mois ≈ 10–11 min de capture) | Plus 20 $/mois (ou 200 $/an) **si le test confirme que Free ne suffit pas** |
+| Droits commerciaux | Chaîne COLMAP + Brush/gsplat/OpenSplat + Meshroom + SuperSplat — **0 €** | Scaniverse Pro 50 $/mois ou 500 $/an |
+
+> **Avertissement sur la fusion cloud** : **sans recouvrement réellement filmé entre les scans, les scans excédentaires sont silencieusement exclus de l'asset final**. Cas documenté : 13 scans soumis, **3 seulement intégrés**, **30 210 crédits consommés** — soit davantage que le quota mensuel du plan Free, dépensés pour rien. Testez la fusion sur 2 scans courts avant d'y engager tous vos crédits.
+
+> **Rétention côté serveur — à ne pas découvrir trop tard.** **KIRI Engine** : une rétention de **3 jours** est documentée **côté API** (« *your models are stored on our servers for 3 days. After this period, they'll be automatically deleted* ») — **appliquez-la par prudence à l'app**, faute de documentation équivalente. **Scaniverse cloud** : les traitements sont longs et sans délai garanti (des scans bloqués « en traitement » pendant près d'une semaine ont été rapportés sur le forum officiel). **Lancez un traitement cloud, puis téléchargez dès qu'il aboutit** — un aller-retour d'une semaine peut tout faire perdre.
+
+**Total conseillé : 0 € pour démarrer, 0 € ensuite dans la grande majorité des cas (7,99 $ au maximum si vous préférez RadianceKit à 3D Splat App).**
 
 ### Matrice de décision
 
-| Ma situation | Pipeline conseillé |
-|---|---|
-| Un iPad (avec ou sans LiDAR), pas d'ordinateur, 0 € | **Section 4** : Scaniverse (splat + mesh) → SuperSplat dans Safari ou plus tard sur un ordinateur |
-| iPad + Mac Apple Silicon | Section 4 pour le mesh + **section 5.2** (3D Splat App ou COLMAP + Brush) pour un splat de meilleure qualité |
-| iPad + PC Windows avec RTX / Radeon récente | **Section 5.3** : RealityScan (mesh toute échelle + COLMAP) → Brush / LichtFeld / OpenSplat |
-| iPad + vieux PC sans GPU | **Section 5.4** : Splatware Lite, ou Kaggle/Colab avec OpenSplat |
-| iPad Pro et envie de poses ARKit sans COLMAP | SplatKing (gratuit, dossier COLMAP) ou Polycam raw → section 5.2 / 5.3 / 5.5 |
-| Je veux splat + mesh sans rien installer et j'accepte ≈ 50 $/an | KIRI Engine Pro |
-| Bâtiment entier ou circuit complet | Découper en zones (section 7) ; fusion via Scaniverse Plus, ou drone + vidéo au sol → RealityScan/COLMAP → Brush/LichtFeld ; Teleport si budget |
-| Utilisation dans ROS/Gazebo | Mesh LiDAR (Scaniverse/KIRI/Modelar) → Blender → DAE/GLB → section 9 |
+| Votre situation | Splat | Mesh | Coût | Section |
+|---|---|---|---|---|
+| iPad Pro seul, une pièce | Scaniverse Classic | Reprocess Scan → Mesh LiDAR (ou Modelar pour E57/LAS) | 0 € | §4 |
+| iPad Air/mini/standard seul, une pièce | Scaniverse Classic | Polycam Space non-LiDAR (replis : KIRI PLY/XYZ, RealityScan) | 0 € | §4 |
+| iPad sans mode Splat (A12/A13) | **Splatware Free** (navigateur) ou §5 | Polycam / KIRI | 0 € | §4 étape 0 |
+| Appartement / maison | Scaniverse par pièce + SuperSplat ; fusion cloud **à tester avec le quota Free** | idem, par pièce | 0 € | §4 étape 9 |
+| iPad + Mac Apple Silicon | **3D Splat App (0 €)**, Brush, ou RadianceKit | **Reality Composer Pro / PhotoCatch (0 €, sans terminal)**, 3DGS-to-PC ou ODM | 0–7,99 $ | §5, §6 |
+| iPad + PC NVIDIA | gsplat ou LichtFeld | RealityScan 2.2, ou Meshroom | 0 € | §5 |
+| **PC Windows/Linux, GPU AMD ou Intel** | **Brush, binaire précompilé**, ou **OpenSplat (ROCm/HIP)** | RealityScan 2.2 (AMD supporté depuis la 2.2) | 0 € | §5.4 |
+| **PC sans GPU NVIDIA, mesh seulement** | — | **Meshroom limité au Draft Meshing** → préférez RealityScan ou ODM | 0 € | §5.5 |
+| **Aucun GPU** | Kaggle, Lightning AI, ou Splatware Free | ODM Docker | 0 € | §5.4 |
+| Extérieur étendu, piste, circuit | **Drone + ODM/RealityScan** ; **Vast.ai A100 80 Go** si la scène est très lourde | idem | 0 € + drone | §5.5 |
+| Usage professionnel | Chaîne COLMAP + Brush/OpenSplat + SuperSplat | RealityScan, Meshroom | 0 € (licences libres) | §5, §6 |
+
+### Ce qui ne marchera pas — à savoir avant de commencer
+
+- **Circuit ou piste complète : non.** La capture depuis un véhicule en mouvement est **explicitement non supportée** par Niantic (échec confirmé en juillet 2026 sur une vidéo 360° de 4 min 57 filmée en voiture : « *scan creation from a moving vehicle is currently unsupported* »). Une vidéo 360° donne **un seul** splat non fusionnable. Repli honnête : tronçons et points d'intérêt (virage, stand, ligne d'arrivée), ou drone + pipeline ordinateur.
+- **Métrologie : non.** Comptez ±5 à 10 cm bruts sur une pièce de 6 m, LiDAR limité à ≈ 5 m, et un mesh dont la géométrie « privilégie l'aspect visuel sur la précision ». **L'échelle du splat, elle, n'est garantie par aucune documentation** — d'où l'étalon physique.
+- **Droits commerciaux : non** en gratuit chez Scaniverse (ni avec 2DGS/SuGaR, ni avec Spectacular Rec). Oui avec COLMAP + Brush/gsplat/OpenSplat + Meshroom + SuperSplat.
+- **Fusion automatique de scans : non** en version Classic. **Côté cloud, le palier n'est pas précisé par l'éditeur** : la fonction est mentionnée dans le texte de présentation mais rattachée à aucun plan dans le tableau comparatif, et des sources secondaires l'attribuent à Plus/Pro. **À tester avec les 20 000 crédits Free (≈ 10–11 min de capture) avant d'en dépendre ou d'acheter.** Dans tous les cas, les plafonds de 5 min et 500 m² par scan s'appliquent.
+- **Un mesh de scan brut directement exploitable : non.** Il faut systématiquement une passe de nettoyage et de décimation (MeshLab, CloudCompare, Blender) avant tout usage en moteur, en simulation ou en CAO (§5.5).
+- **Rattrapage d'un scan raté sur ordinateur : impossible** — les données brutes ne sortent jamais de l'app.
 
 ---
 
 ## 11. Sources
 
-Toutes les URL ci-dessous ont été réellement ouvertes le 19 septembre 2026 par les agents de vérification (pages officielles en priorité).
+**Scaniverse / Niantic Spatial**
+https://dev.scaniverse.com/support · https://www.nianticspatial.com/pricing · https://www.nianticspatial.com/docs/scaniverse/techniques/ · https://www.nianticspatial.com/docs/scaniverse/troubleshoot/ · https://www.nianticspatial.com/docs/scaniverse/quickstart/ · https://www.nianticspatial.com/docs/scaniverse/360camera/ · https://www.nianticspatial.com/blog/usdz-scaniverse · https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223 · https://community.nianticspatial.com/t/processing-fails-on-a-couple-of-my-splats/5734 · https://community.nianticspatial.com/t/generated-assets-from-13-scans-but-only-3-scans-appear-in-the-final-asset/5761 · https://community.nianticspatial.com/t/scan-render-failure-generic-failed-status-for-8k-360-hevc-video-gopro-max-2/5758 · https://community.nianticspatial.com/t/are-there-any-plans-for-this-to-be-available-in-a-license-for-students/5747 · https://community.nianticspatial.com/t/test-scans-stuck-in-vps-processing-for-almost-a-week/5375
 
-**Scaniverse / Niantic Spatial** — https://www.nianticspatial.com/products/capture · https://www.nianticspatial.com/pricing · https://www.nianticspatial.com/en/faq/scaniverse · https://dev.scaniverse.com/support · https://www.nianticspatial.com/docs/scaniverse/techniques/ · https://www.nianticspatial.com/docs/scaniverse/troubleshoot/ · https://www.nianticspatial.com/docs/scaniverse/360camera/ · https://www.nianticspatial.com/blog/usdz-scaniverse · https://www.nianticspatial.com/blog/spz4 · https://community.nianticspatial.com/t/processing-fails-on-a-couple-of-my-splats/5734 · https://apps.apple.com/us/app/scaniverse-3d-scanner/id1541433223 · https://dev.scaniverse.com/news/creating-splats-which-app-to-choose · https://github.com/nianticlabs/spz
+**Polycam**
+https://poly.cam/pricing · https://learn.poly.cam/hc/en-us/articles/43933482446996-How-to-Use-Space-Mode-Non-LiDAR-Devices · https://learn.poly.cam/hc/en-us/articles/27756102599572-What-File-Types-Can-Polycam-Export · https://learn.poly.cam/hc/en-us/articles/34295907278996-How-to-Access-Developer-Mode · https://learn.poly.cam/hc/en-us/articles/27426630160148-App-Crashing-While-Processing-Captures · https://learn.poly.cam/hc/en-us/articles/48538689020692-Preparing-to-Scan · https://poly.cam/press-release/space-mode-access-expanded-2026 · https://raw.githubusercontent.com/PolyCam/polyform/main/README.md
 
-**Polycam** — https://poly.cam/pricing · https://poly.cam/tools/gaussian-splatting · https://learn.poly.cam/hc/en-us/articles/27425185907348-How-to-Use-Object-Mode · https://learn.poly.cam/hc/en-us/articles/36655587097620-How-to-Use-Space-Mode-LiDAR-Devices · https://github.com/PolyCam/polyform · https://apps.apple.com/us/app/polycam-3d-scanner-lidar-360/id1532482376
+**KIRI Engine**
+https://www.kiriengine.app/pricing · https://www.kiriengine.app/features/export-formats · https://www.kiriengine.app/features/photo-scan · https://www.kiriengine.app/faq/can-i-export-a-point-cloud-of-my-3d-model · https://www.kiriengine.app/blog/kiri-engine-basic-vs-pro · https://docs.kiriengine.app/asset-retention/ · https://github.com/Kiri-Innovation/3dgs-render-blender-addon
 
-**KIRI Engine** — https://www.kiriengine.app/pricing · https://www.kiriengine.app/blog/kiri-engine-basic-vs-pro · https://www.kiriengine.app/blog/Best_Free_3D_Scanner_Apps_2026 · https://www.kiriengine.app/blog/how-to-capture-3d-gaussian-splats-kiri-engine · https://www.kiriengine.app/blog/3DGSvsPhotogrammetryvsLiDAR · https://www.kiriengine.app/faq/scan-processing-time · https://apps.apple.com/us/app/kiri-engine-3d-scanner-app/id1577127142
+**Autres apps iPad de scan**
+https://modelar.ai/ · https://apps.apple.com/us/app/modelar-3d-lidar-scanner/id1572844190 · https://apps.apple.com/us/app/realityscan-mobile/id1584832280 · https://www.realityscan.com/mobile · https://apps.apple.com/us/app/spectacular-rec/id6473188128 · https://apps.apple.com/us/app/gaussian-splatking/id6759175085 · https://radiancefields.com/splatking/guide/technique · https://get.teleport.varjo.com/pricing · https://www.voxelio.app · https://record3d.app/ · https://apps.apple.com/us/app/record3d-3d-videos/id1477716895 · https://record3d.app/presskit
 
-**RealityScan (Epic Games)** — https://www.realityscan.com/mobile · https://www.realityscan.com/license · https://www.realityscan.com/news/realityscan-2-2-is-here-with-full-amd-gpu-support-download-today · https://dev.epicgames.com/documentation/realityscan/realityscan-2-2 · https://dev.epicgames.com/documentation/realityscan/realityscan-2-1-1 · https://dev.epicgames.com/documentation/realityscan-mobile/realityscan-mobile-1-7-release-notes · https://apps.apple.com/us/app/realityscan-mobile/id1584832280
+**Apple Object Capture (Mac, sans ligne de commande)**
+https://developer.apple.com/videos/play/wwdc2024/10107/ · https://developer.apple.com/videos/play/wwdc2023/10191/ · https://developer.apple.com/documentation/realitykit/capturing-photographs-for-realitykit-object-capture · https://developer.apple.com/documentation/realitykit/realitykit-object-capture · https://developer.apple.com/forums/thread/732290 · https://apps.apple.com/us/app/reality-composer/id1462358802 · https://www.photocatch.app/ · https://www.photocatch.app/press · https://9to5mac.com/2021/06/23/photocatch-lets-you-easily-create-3d-models-using-apples-new-object-capture-api/ *(source de 2021)*
 
-**Autres apps iPad** — Teleport : https://get.teleport.varjo.com/pricing · https://teleport.varjo.com/docs/quick-start-guide/ · https://apps.apple.com/us/app/teleport-by-varjo/id6450445339 — Gaussian SplatKing : https://radiancefields.com/splatking · https://radiancefields.com/splatking/guide/pipelines · https://radiancefields.com/splatking/guide/output · https://apps.apple.com/us/app/gaussian-splatking/id6759175085 — Voxelio : https://www.voxelio.app · https://apps.apple.com/us/app/voxelio-3d-lidar-scanner/id6764829442 — Modelar : https://modelar.ai/ · https://apps.apple.com/us/app/modelar-3d-lidar-scanner/id1572844190 — 3D Scanner App : https://apps.apple.com/us/app/3d-scanner-app/id1419913995 · https://labs.laan.com/apps · https://www.3dscannerlidar.com/ — Reality Composer : https://apps.apple.com/us/app/reality-composer/id1462358802 — Record3D : https://record3d.app/ · https://apps.apple.com/us/app/record3d-3d-videos/id1477716895 — Spatial Fields : https://spatialfields.app/ · https://apps.apple.com/app/id6745549629 — Splatcatcher : https://apps.apple.com/us/app/splatcam-lidar-capture/id6759800588 — Luma : https://apps.apple.com/us/app/luma-ai/id1615849914 — NeRFCapture : https://github.com/jc211/NeRFCapture — Spectacular Rec : https://spectacularai.github.io/docs/sdk/tools/nerf.html · https://pypi.org/project/spectacularai/ — Blackmagic Camera : https://www.blackmagicdesign.com/products/blackmagiccamera · https://www.blackmagicdesign.com/products/blackmagiccamera/techspecs
+**SuperSplat / PlayCanvas / splat-transform**
+https://superspl.at/editor · https://developer.playcanvas.com/user-manual/supersplat/editor/editing-splats/ · https://developer.playcanvas.com/user-manual/supersplat/editor/transform-measure-align/ · https://developer.playcanvas.com/user-manual/supersplat/editor/publishing/ · https://github.com/playcanvas/splat-transform · https://raw.githubusercontent.com/playcanvas/splat-transform/main/README.md · https://blog.playcanvas.com/new-in-supersplat-editor-3-0-rebuilt-on-webgpu/
 
-**Traitement sur ordinateur** — 3D Splat App : https://3dsplatapp.com · https://apps.apple.com/app/3d-splat-app/id6760239941 — Brush : https://github.com/ArthurBrussee/brush · https://radiancefields.com/platforms/brush — OpenSplat : https://github.com/WebODM/OpenSplat · https://sites.fastspring.com/masseranolabs/product/opensplatforwindows — LichtFeld Studio : https://lichtfeld.io/ · https://github.com/MrNeRF/LichtFeld-Studio · https://portal.lichtfeld.io/signup/ · https://radiancefields.com/platforms/lichtfeld-studio — Postshot : https://www.jawset.com/shop/pricing · https://www.jawset.com/docs/d/Postshot+User+Guide/Importing+Images · https://www.jawset.com/docs/d/Postshot+User+Guide/Capturing+Guidelines · https://radiancefields.com/platforms/postshot — COLMAP : https://colmap.github.io/ · https://colmap.github.io/install.html · https://github.com/colmap/colmap/releases · https://github.com/colmap/glomap — Nerfstudio : https://docs.nerf.studio/quickstart/custom_dataset.html · https://docs.nerf.studio/quickstart/export_geometry.html · https://github.com/nerfstudio-project/nerfstudio/releases · https://github.com/nerfstudio-project/gsplat — Apple Object Capture : https://developer.apple.com/documentation/realitykit/realitykit-object-capture · https://developer.apple.com/videos/play/wwdc2024/10107/ · https://developer.apple.com/videos/play/wwdc2021/10076/ — PhotoCatch : https://www.photocatch.app/ — Metashape : https://www.agisoft.com/buy/online-store/ · https://github.com/agisoft-llc/metashape-scripts/blob/master/src/export_for_gaussian_splatting.py — 3DF Zephyr : https://www.3dflow.net/3df-zephyr-feature-comparison/ — ODM/WebODM : https://opendronemap.org/download/ · https://docs.opendronemap.org/installation/ — hloc : https://github.com/cvg/Hierarchical-Localization — RadianceKit : https://apps.apple.com/app/id6760346035 — SplatScene : https://splatscene.app/
+**Entraîneurs desktop**
+https://3dsplatapp.com/ · https://apps.apple.com/us/app/3d-splat-app/id6760239941 · https://apps.apple.com/us/app/radiancekit/id6760346035?mt=12 · https://www.radiancekit.de/ · https://github.com/bkindler/radiancekit · https://splatscene.app/ · https://github.com/freddewitt/CorbeauSplat · https://github.com/ArthurBrussee/brush · https://raw.githubusercontent.com/ArthurBrussee/brush/main/README.md · **https://github.com/ArthurBrussee/brush/releases** · https://github.com/ArthurBrussee/brush/releases/tag/v0.3.0 · https://arthurbrussee.github.io/brush-demo · https://github.com/nerfstudio-project/gsplat · https://raw.githubusercontent.com/nerfstudio-project/gsplat/main/examples/simple_trainer.py · https://github.com/WebODM/OpenSplat · https://raw.githubusercontent.com/WebODM/OpenSplat/main/README.md · https://sites.fastspring.com/masseranolabs/product/opensplatforwindows · https://github.com/MrNeRF/LichtFeld-Studio · https://lichtfeld.io/ · https://portal.lichtfeld.io/signup/ · https://www.jawset.com/shop/pricing/ · https://www.jawset.com/docs/d/Postshot+User+Guide/Capturing+Guidelines · https://splatware.com/pricing
 
-**Cloud** — Splatware : https://splatware.com/pricing · https://splatware.com/docs/uploading-and-data-preparation — Google Colab : https://research.google.com/colaboratory/faq.html · https://colab.research.google.com/signup · https://github.com/googlecolab/colabtools/issues/563 — Kaggle : https://www.kaggle.com/docs/notebooks · https://www.kaggle.com/docs/efficient-gpu-usage · https://www.kaggle.com/discussions/product-announcements/735239 · https://www.kaggle.com/code/stpeteishii/a-loft-colmap-gaussian-splatting — RunPod : https://www.runpod.io/pricing — Vast.ai : https://computeprices.com/providers/vast — Thunder Compute (comparatif Colab) : https://www.thundercompute.com/blog/colab-alternatives-for-cheap-deep-learning-in-2025
+**COLMAP / photogrammétrie / capture avec poses**
+https://colmap.github.io/cli.html · https://colmap.github.io/install.html · https://github.com/cvg/Hierarchical-Localization · https://spectacularai.github.io/docs/sdk/tools/nerf.html · https://pypi.org/project/spectacularai/ · https://www.realityscan.com/license · https://dev.epicgames.com/documentation/realityscan/realityscan-2-2 · https://opendronemap.org/download/ · https://docs.opendronemap.org/outputs/ · **https://github.com/alicevision/Meshroom** · https://alicevision.org/view/meshroom.html · https://github.com/alicevision/Meshroom/releases · https://github.com/alicevision/meshroom/issues/1226 · https://github.com/alicevision/Meshroom/wiki/Error:-This-program-needs-a-CUDA-Enabled-GPU · https://meshroom-manual.readthedocs.io/en/latest/first-steps/install/requirements.html
 
-**Viewers, formats, moteurs** — SuperSplat : https://superspl.at/ · https://developer.playcanvas.com/user-manual/supersplat/ · https://developer.playcanvas.com/user-manual/supersplat/editor/editing-splats/ · https://developer.playcanvas.com/user-manual/supersplat/editor/import-export/ · https://developer.playcanvas.com/user-manual/supersplat/editor/publishing/ · https://github.com/playcanvas/supersplat/releases · https://blog.playcanvas.com/new-in-supersplat-editor-3-0-rebuilt-on-webgpu/ · https://github.com/playcanvas/splat-transform — Spark / World Labs : https://docs.worldlabs.ai/marble/export/gaussian-splat/unreal — Swyvl : https://swyvl.io/blog/best-gaussian-splat-viewers/ · https://swyvl.io/blog/gaussian-splat-formats-ply-spz-ksplat/ · https://swyvl.io/blog/how-to-create-gaussian-splats/ — MetalSplatter : https://github.com/scier/MetalSplatter — 2DGS : https://github.com/hbb1/2d-gaussian-splatting — SuGaR : https://github.com/Anttwo/SuGaR — KIRI Blender add-on : https://www.kiriengine.app/blog/kiri-engine-basic-vs-pro
+**Splat → mesh, nettoyage et décimation**
+https://github.com/Lewis-Stuart-11/3DGS-to-PC · https://github.com/hbb1/2d-gaussian-splatting · https://raw.githubusercontent.com/hbb1/2d-gaussian-splatting/main/LICENSE.md · https://github.com/Anttwo/SuGaR · **https://www.meshlab.net/** · https://www.cloudcompare.org/doc/wiki/index.php/Poisson_Surface_Reconstruction_(plugin) · https://docs.blender.org/manual/en/latest/modeling/modifiers/generate/decimate.html
 
-**Plateforme Apple et matériel** — https://developer.apple.com/videos/play/wwdc2026/279/ · https://developer.apple.com/tutorials/data/documentation/realitykit/gaussiansplatresource.json · https://developer.apple.com/tutorials/data/documentation/realitykit/gaussiansplatcomponent.json · https://developer.apple.com/videos/play/wwdc2025/287/ · https://developer.apple.com/tutorials/data/documentation/macos-release-notes/macos-26-release-notes.json · https://aousd.org/blog/openusd-v26-03/ · https://www.apple.com/ipad-pro/specs/ · https://www.apple.com/ipad-air/specs/ · https://www.apple.com/iphone-18-pro/specs/ · https://www.apple.com/shop/buy-ipad/ipad-pro · https://www.apple.com/newsroom/2025/10/apple-introduces-the-powerful-new-ipad-pro-with-the-m5-chip/ · https://www.apple.com/newsroom/2020/03/apple-unveils-new-ipad-pro-with-lidar-scanner-and-trackpad-support-in-ipados/ · https://support.apple.com/en-us/119916 · https://radiancefields.com/platforms/apple · https://www.mactrast.com/2026/09/apple-releases-ios-27-ipados-27-macos-27-watchos-27-tvos-27-and-visionos-27-to-the-general-public/ · https://caseadri.com/roomkit/guides/which-iphones-have-lidar/
+**Formats, viewers, moteurs**
+https://github.com/nianticlabs/spz · https://www.nianticspatial.com/blog/spz4 · https://github.com/sparkjsdev/spark · https://sparkjs.dev/docs/new-features-2.0/ · https://developer.blender.org/docs/release_notes/5.3/rendering/ · https://github.com/aras-p/UnityGaussianSplatting · https://github.com/xverse-engine/XScene-UEPlugin · https://github.com/scier/MetalSplatter
 
-**Bonnes pratiques** — https://help.sketchup.com/en/gaussian-splats-best-practices · https://www.freegaussian.ai/blog/best-practices-capture · https://realhorizons.ai/blog/indoor-gaussian-splatting-capture-guide/ · https://realhorizons.ai/blog/outdoor-gaussian-splatting-capture-guide/ · https://realhorizons.ai/blog/gaussian-splatting-from-photos-vs-video/ · https://archgyan.com/luma-ai-3d-capture-architects-existing-buildings/ · https://arxiv.org/html/2507.06109v1 (LighthouseGS) · https://na.mipmap3d.com/blogs/from-field-to-model-capturing-high-quality-3d-gaussian-splats-with-uav-imagery/ · https://sainingzhang.github.io/project/uc-gs/ · https://www.captures.studio/interactive-capture-tutorial · https://www.reshot.ai/3d-gaussian-splatting · https://github.com/NVlabs/instant-ngp/blob/master/docs/nerf_dataset_tips.md · https://www.polyvia3d.com/guides/gaussian-splatting-mobile-capture · https://www.polyvia3d.com/guides/gaussian-splatting-tools-comparison · https://www.polyvia3d.com/guides/best-gaussian-splatting-apps · https://www.skyebrowse.com/news/posts/polycam-vs-scaniverse · https://www.skyebrowse.com/news/posts/gaussian-splat-from-video · https://www.scanmanifold.com/blog-posts/lidar-on-iphone-how-accurate-is-it-plus-the-biggest-errors-that-manifold-corrects
+**Capture, matériel, transfert, GPU cloud**
+https://www.blackmagicdesign.com/products/blackmagiccamera · **https://www.blackmagicdesign.com/products/blackmagiccamera/techspecs** · https://forum.blackmagicdesign.com/viewtopic.php?f=2&t=196533 · https://help.sketchup.com/en/gaussian-splats-best-practices · https://arxiv.org/html/2507.06109v1 · https://sharp-frames.reflct.app/ · https://www.apple.com/ipad-pro/specs/ · https://www.apple.com/ipad-air/specs/ · https://caseadri.com/roomkit/guides/which-iphones-have-lidar/ · https://help.roomsketcher.com/hc/en-us/articles/29949063142045-Does-My-Phone-or-Tablet-Have-LiDAR · https://www.kaggle.com/docs/notebooks · https://www.kaggle.com/docs/efficient-gpu-usage · https://www.kaggle.com/discussions/product-announcements/735239 · https://research.google.com/colaboratory/faq.html · **https://lightning.ai/pricing/** · https://lightning.ai/docs/platform/overview/faq/billing · https://www.runpod.io/pricing · **https://vast.ai/pricing** · https://www.scanmanifold.com/blog-posts/lidar-on-iphone-how-accurate-is-it-plus-the-biggest-errors-that-manifold-corrects *(source de 2022)*
 
-**Retours d'utilisateurs (Reddit, lus via flux RSS / archive)** — https://www.reddit.com/r/GaussianSplatting/comments/1sqdze2/mobile_gaussian_splatting_capture_thats_easy/ · https://www.reddit.com/r/GaussianSplatting/comments/1kpt60s/top_5_tools_for_gaussian_splatting_compared/ · https://www.reddit.com/r/3DScanning/comments/1no11h6/polycam_vs_scaniverse_scanned_wall_scanned_using/ · https://www.reddit.com/r/GaussianSplatting/comments/1qqyhki/best_approachsoftware_for_highest_quality/ · https://www.reddit.com/r/GaussianSplatting/comments/1j80nhk/how_to_get_started_with_gaussian_splatting/ · https://www.reddit.com/r/GaussianSplatting/comments/1sfgtgn/noob_needs_help/ · https://www.reddit.com/r/GaussianSplatting/comments/1o4ockj/big_continuous_splat_of_indoors_or_outdoors_area/ · https://www.reddit.com/r/GaussianSplatting/comments/1szy7bm/iphone_app_with_guided_capture_for_high_quality/
+**ROS 1 Noetic (ce dépôt)**
+https://index.ros.org/p/map_server/ · https://github.com/ros-planning/navigation/blob/noetic-devel/map_server/src/map_saver.cpp · https://index.ros.org/p/octomap_server/ · https://github.com/OctoMap/octomap_mapping/blob/kinetic-devel/octomap_server/src/OctomapServer.cpp · https://classic.gazebosim.org/tutorials?tut=model_structure · https://www.cloudcompare.org/doc/wiki/index.php/Cross_Section · https://www.cloudcompare.org/doc/wiki/index.php/Rasterize
 
-**ROS / Gazebo / RViz** — https://classic.gazebosim.org/tutorials?tut=import_mesh · https://gazebosim.org/docs/harmonic/sdf_worlds/ · https://gazebosim.org/docs/harmonic/release-features/ · https://github.com/gazebosim/sdformat/blob/main/sdf/1.11/mesh_shape.sdf · https://github.com/gazebosim/gz-rendering/blob/gz-rendering8/ogre2/src/Ogre2Heightmap.cc · https://classic.gazebosim.org/tutorials?tut=dem · https://github.com/ros2/rviz/blob/rolling/rviz_rendering/src/rviz_rendering/mesh_loader.cpp · https://github.com/ros2/common_interfaces/blob/rolling/visualization_msgs/msg/Marker.msg · https://docs.blender.org/manual/en/3.6/modeling/modifiers/generate/decimate.html · https://www.cloudcompare.org/doc/wiki/index.php/Rasterize · https://www.cloudcompare.org/doc/wiki/index.php/Cross_Section · https://www.cloudcompare.org/doc/wiki/index.php/Poisson_Surface_Reconstruction_(plugin) · https://github.com/LihanChen2004/pcd2pgm · https://github.com/OctoMap/octomap_mapping · https://github.com/ANYbotics/grid_map/tree/master/grid_map_pcl · https://github.com/ros-navigation/navigation2/blob/main/nav2_map_server/README.md · https://github.com/ros-perception/perception_pcl
+**ROS 2 / Gazebo moderne (uniquement en cas de migration)**
+https://github.com/ros2/common_interfaces/blob/rolling/visualization_msgs/msg/Marker.msg · https://github.com/ros2/rviz/blob/rolling/rviz_rendering/src/rviz_rendering/mesh_loader.cpp · https://github.com/gazebosim/sdformat/blob/main/sdf/1.11/mesh_shape.sdf · https://gazebosim.org/docs/harmonic/sdf_worlds/ · https://github.com/LihanChen2004/pcd2pgm · https://github.com/ros-navigation/navigation2/blob/main/nav2_map_server/README.md
 
+**Divers**
+https://docs.nerf.studio/quickstart/custom_dataset.html
 ---
 
-## Annexe — méthode et limites de l'étude
+## Annexe — comment ce rapport a été produit, et ce qu'il ne garantit pas
 
-- **Workflow** : 11 agents de recherche web en parallèle (un angle chacun) → consolidation en 110 solutions canoniques → un agent « sceptique » par solution chargé de **réfuter** les affirmations sur les sources officielles → fiches produit à jour. Les phases prévues ensuite (panel de 4 pipelines candidats notés par 3 juges, rédaction automatique, critique de complétude) ont été interrompues par un plafond de dépense du compte ; la synthèse de ce document a donc été rédigée directement à partir des 34 fiches vérifiées et des 11 synthèses de recherche.
-- **Vérifiées par un sceptique (34)** : Scaniverse, Polycam, KIRI Engine, RealityScan Mobile, RealityScan desktop, Teleport, Postshot, Gaussian SplatKing, Splatcatcher, 3D Splat App, Voxelio, Spatial Fields, Modelar, 3D Scanner App, Reality Composer, Apple Object Capture, PhotoCatch, Record3D, Nerfstudio, Spectacular Rec, NeRFCapture, COLMAP, Google Colab, Kaggle, OpenSplat, LichtFeld Studio, Brush, SuperSplat, Splatware, matériel iPad, bonnes pratiques de capture, pipeline DIY, Blackmagic Camera, grandes scènes / drone.
-- **Non revérifiées (issues d'une seule passe de recherche, à confirmer avant de s'y fier)** : Lightning AI, RunPod, Vast.ai, gsplat, RadianceKit, SplatScene, Reflct, Swyvl, Spatial Studio, splat-transform, Spark, SPZ (détails), add-on Blender KIRI, Blender 5.3, 2DGS, SuGaR, RealityKit 27 (détails), Meshroom, ODM/WebODM, MeshLab, CloudCompare (détails), Metashape (fiche partielle).
-- **Points marqués « à vérifier »** dans le texte : mode splat Scaniverse sur iPad A12/A13 ; export « Splat PLY » Polycam réservé à Business ; quota hebdomadaire gratuit de Voxelio ; date exacte de l'API splats RealityKit sur iPadOS 27.
-- Reddit était bloqué pour les agents : les retours d'utilisateurs ont été lus via les flux RSS officiels ou une archive, et sont présentés comme des témoignages, pas comme des faits.
+**Méthode.** Le document est le produit d'un workflow multi-agents exécuté les 19 et 20 septembre 2026, en six phases :
+
+1. **Recherche** — 11 agents en parallèle, un par angle : apps iPad de splat, apps iPad de scan, capture avec poses ARKit, traitement cloud gratuit, traitement local, viewers et conversion, plateforme Apple, bonnes pratiques de capture, tarifs, retours d'utilisateurs, réutilisation ROS.
+2. **Consolidation** — 110 solutions canoniques dégagées des constats bruts, classées par priorité.
+3. **Vérification sceptique** — un agent par solution, chargé non pas de confirmer mais de **réfuter** chaque affirmation sur les sources officielles (site éditeur, page de tarifs, App Store, documentation, GitHub, changelog). **59 fiches produites.** De nombreuses affirmations ont effectivement été réfutées : le splat gratuit de KIRI Engine (en réalité réservé au plan Pro), la disponibilité des splats sur le plan gratuit de Polycam, l'obligation d'un GPU NVIDIA pour RealityScan (AMD accepté depuis juin 2026), plusieurs dates de version, les prix de l'iPad Pro (hausse Apple de juin 2026).
+4. **Limites réelles** — une passe supplémentaire sur les six solutions les plus importantes (Scaniverse, Polycam, KIRI Engine, RealityScan Mobile, 3D Scanner App, Gaussian SplatKing) pour recenser les retours d'utilisateurs et les limites de terrain.
+5. **Conception et jury** — quatre pipelines candidats rédigés indépendamment (tout-iPad gratuit, qualité maximale gratuite, usage régulier, réutilisation ROS), puis notés par trois juges aux points de vue distincts (débutant pressé, expert en splatting, pragmatique économe) sur la simplicité, le coût, la qualité et la fiabilité.
+6. **Rédaction et critique** — rédaction à partir du pipeline gagnant enrichi des meilleures idées des autres, puis deux tours de critique de complétude et de révision.
+
+**Chiffres de la dernière exécution :** 70 agents, aucun en erreur, environ 5,2 millions de jetons, 368 appels d'outils. Les exécutions précédentes, interrompues par des limites de facturation, avaient déjà produit les phases 1 à 4.
+
+**Ce qui est solide.** Les faits sur les solutions listées en section 3 proviennent de pages officielles réellement ouvertes, et chacun a survécu à une tentative de réfutation. Les affirmations sur ce dépôt (arguments déjà déclarés dans les fichiers de lancement, règles `install()` toutes commentées dans le CMakeLists, sortie du convertisseur écrite dans un fichier `.txt`) ont été relues dans le code.
+
+**Ce qui l'est moins.**
+
+- **51 solutions de priorité basse n'ont pas été vérifiées individuellement** : elles n'apparaissent pas dans le rapport, ou seulement en mention.
+- La dernière critique de complétude rendait encore un verdict « à réviser » avec une note de 8 sur 10 ; la révision correspondante a été appliquée, mais **aucune critique supplémentaire n'a validé cette dernière passe**.
+- Reddit était inaccessible aux agents : les retours d'utilisateurs ont été lus via les flux RSS officiels ou une archive, et sont présentés comme des témoignages, non comme des faits.
+- Plusieurs pages de tarifs sont rendues en JavaScript et n'ont pas pu être lues intégralement ; les points concernés sont signalés dans le texte.
+- Tout ce qui touche aux prix vieillit vite. Scaniverse est passé au freemium, Polycam a déplacé des fonctions vers des paliers supérieurs et Postshot a retiré l'export de son plan gratuit, tout cela en 2026. **Revérifiez avant de payer.**
